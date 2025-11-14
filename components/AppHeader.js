@@ -284,10 +284,10 @@ const AppHeader = ({ hideLine }) => {
 
                 <View style={styles.rightSideContainer}>
                     <TouchableOpacity style={styles.button}
-                        onPress={() => {
-                            setLeftIsVisible(false)
-                            setRightIsVisible(!right_isVisible)
-                        }}
+                        // onPress={() => {
+                        //     setLeftIsVisible(false)
+                        //     setRightIsVisible(!right_isVisible)
+                        // }}
                     >
                         <MaterialIcons name="menu" color={colors.white} size={30} />
                     </TouchableOpacity>
@@ -302,7 +302,7 @@ const AppHeader = ({ hideLine }) => {
                 </View>
             </View>
 
-            <View style={styles.sideTabContainer}>
+            {/* <View style={styles.sideTabContainer}>
                 {(right_isVisible || left_isVisible) && (
                     <Pressable style={styles.sideTabBackground}
                         onPress={() => {
@@ -319,7 +319,7 @@ const AppHeader = ({ hideLine }) => {
                     setLeftIsVisible={setLeftIsVisible}
                     setRightIsVisible={setRightIsVisible}
                 />)}
-            </View>
+            </View> */}
 
         </View>
     );
