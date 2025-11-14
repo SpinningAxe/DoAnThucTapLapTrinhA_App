@@ -11,9 +11,8 @@ import { colors, globalStyles } from './GlobalStyle';
 import { Filigree1, Filigree5_Bottom } from './decorations/Filigree';
 import { DecoButton } from './decorations/DecoButton';
 
-const BookList = ({ title, data, customDestination, showAmount }) => {
+const BookList = ({ title, data }) => {
     if (data == null || data.length <= 0) return (null);
-    // const navDestination = customDestination == null ? "BookListingScreen" : customDestination;
 
     const navigation = useNavigation();
     const dispatch = useDispatch();
@@ -98,7 +97,6 @@ const BookList = ({ title, data, customDestination, showAmount }) => {
 
 export const CreationList = ({ data }) => {
     if (data == null || data.length <= 0) return (null);
-
     const navigation = useNavigation();
     const dispatch = useDispatch();
 
@@ -164,17 +162,14 @@ export const CreationList = ({ data }) => {
                 horizontal={true}
                 style={styles.bl_flatList}
             />
-
-            {data.length > 6 &&
-                <TouchableOpacity style={styles.decoButton}
-                    activeOpacity={1}
-                    onPress={() => {
-                        navigation.navigate("CrListing")
-                    }}
-                >
-                    <DecoButton ButtonText="XEM THÊM" />
-                </TouchableOpacity>
-            }
+            <TouchableOpacity style={styles.decoButton}
+                activeOpacity={1}
+                onPress={() => {
+                    navigation.navigate("Cr_Listing")
+                }}
+            >
+                <DecoButton ButtonText="XEM THÊM" />
+            </TouchableOpacity>
         </View>
     )
 }

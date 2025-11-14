@@ -1,9 +1,10 @@
-import React, { use, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from "react-redux";
 import { setCreationField_2 } from '../store/slices/accountSlice';
+import { fetchGenre } from '../store/slices/bookSlice';
 
 import { colors, globalStyles } from '../components/GlobalStyle';
 import { Filigree2, Filigree4, Filigree5_Bottom, Filigree5_Top } from '../components/decorations/Filigree';
@@ -137,7 +138,9 @@ const LanguagePickerComponent = ({ pickedLanguage, language, setLanguage, setOpe
 }
 
 const Cr_Create_2 = () => {
-    // const username = useSelector((state) => state.account.username);
+    const dispatch = useDispatch();
+
+    const username = useSelector((state) => state.account.user.username);
 
     const [authorIsAccount, setAuthorIsAccount] = useState(true);
     const [author, setAuthor] = useState('');
@@ -150,8 +153,13 @@ const Cr_Create_2 = () => {
 
     const [translator, setTranslator] = useState('');
 
-    const genreDatabase = [] //require('../assets/_genreDatabase.json');
-    const languageList = [] //require('../assets/_languageList.json');
+    const { genreDatabase, loading } = useSelector((state) => (state.books));
+    useEffect(() => {
+        dispatch(fetchGenre());
+    }, [])
+    const languageList = ["Tiếng Việt", "Tiếng Anh", "Tiếng Trung", "Tiếng Nhật"]
+
+    if (loading) return null;
 
     return (
         <View style={styles.container}>

@@ -4,6 +4,7 @@ import { db } from "../../firebase";
 
 const initialState = {
   booksDatabase: [],
+  genreDatabase: [],
 
   selectedBook: null,
   chaptersOfSelectedBook: [],
@@ -132,7 +133,7 @@ export const searchBooks = createAsyncThunk(
         query(booksRef, where("title", "==", searchKeyword)),
         query(booksRef, where("author", "==", searchKeyword)),
         query(booksRef, where("series", "==", searchKeyword)),
-        query(booksRef, where("genreList", "array-contains", searchKeyword)),
+        query(booksRef, where("genreDatabase", "array-contains", searchKeyword)),
       ];
 
       for (const q of queries) {
@@ -165,6 +166,15 @@ export const searchBooks = createAsyncThunk(
   }
 );
 
+export const fetchGenre = createAsyncThunk("books/fetchGenre", async () => {
+  const snapshot = await getDocs(collection(db, "Genre"));
+  const genre = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return { id: doc.id, ...data };
+  });
+  console.log("fetchGenre success");
+  return genre;
+});
 
 const booksSlice = createSlice({
   name: "books",
@@ -243,6 +253,18 @@ const booksSlice = createSlice({
       .addCase(searchBooks.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch book';
+      })
+      .addCase(fetchGenre.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchGenre.fulfilled, (state, action) => {
+        state.loading = false;
+        state.genreDatabase = action.payload;
+      })
+      .addCase(fetchGenre.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch genre';
       });
   }
 });

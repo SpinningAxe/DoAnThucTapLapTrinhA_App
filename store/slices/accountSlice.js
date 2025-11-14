@@ -35,7 +35,10 @@ const initialState = {
     libraryBookIdList: [], //in account
     libraryBookList: [],
 
+    notificationList: [], //in account
+
     user: null,
+    
     uploading: false,
     loading: false,
     error: null,

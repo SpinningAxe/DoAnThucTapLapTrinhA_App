@@ -1,13 +1,43 @@
-import { createSlice } from "@reduxjs/toolkit";
-import notificationsData from "../../assets/_notiDatabase.json";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+
 
 // State ban đầu
 const initialState = {
+  notificationsDataFromAccount: [],
+
   notifications: [],
   groupedNotifications: [],
   isLoading: false,
   error: null,
 };
+
+export const fetchNotificationFromAccount = createAsyncThunk(
+  "notification/fetchNotificationFromAccount",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+
+      const notificationList = state.account.notificationList || [];
+
+      console.log('Raw notification list:', notificationList);
+
+      const notificationsData = notificationList.map(item => {
+        const [text, time] = item.split('~');
+
+        return {
+          text: text || '',
+          time: time || ''
+        };
+      }).filter(notification => notification.text && notification.time);
+      console.log('Formatted notifications:', notificationsData);
+
+      return notificationsData;
+    } catch (error) {
+      console.error('Error fetching notifications from account:', error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 function formatNotificationData(data) {
   const now = new Date();
@@ -59,11 +89,18 @@ function groupNotifications(data) {
 }
 
 // Thunk (action bất đồng bộ giả lập việc “load” dữ liệu)
-export const loadNotifications = () => async (dispatch) => {
+export const loadNotifications = () => async (dispatch, getState) => {
   try {
     dispatch(loadNotificationsStart());
 
-    // ở đây có thể thay bằng gọi API thực tế
+    // Wait for the fetch to complete and get the result
+    const result = await dispatch(fetchNotificationFromAccount()).unwrap();
+    
+    // Use the result directly instead of accessing state
+    const notificationsData = result; // This contains the formatted notifications
+    
+    console.log('Fetched notifications:', notificationsData);
+
     const formatted = formatNotificationData(notificationsData);
     const grouped = groupNotifications(formatted);
 
@@ -96,6 +133,21 @@ const notificationSlice = createSlice({
       state.groupedNotifications = [];
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchNotificationFromAccount.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchNotificationFromAccount.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.notificationsDataFromAccount = action.payload;
+      })
+      .addCase(fetchNotificationFromAccount.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      });
+  }
 });
 
 // Actions

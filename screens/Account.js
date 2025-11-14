@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -6,29 +6,30 @@ import { useSelector, useDispatch } from "react-redux";
 
 // import { logoutUser } from '../slices/accountSlice';
 
+import { fetchAccountCreations } from '../store/slices/accountSlice';
+
 import { Filigree9, Filigree5_Bottom } from '../components/decorations/Filigree';
-import { OrnateButton } from '../components/decorations/DecoButton';
+import { OrnateButton, OrnateButtonRed } from '../components/decorations/DecoButton';
 
 import { colors, globalStyles } from '../components/GlobalStyle';
 import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
 import ScreenTitle from '../components/ScreenTitle';
-import BookList from '../components/BookList';
-
-const createRandomList = (array, count) => {
-    return [...array]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, count);
-};
+import { CreationList } from '../components/BookList';
 
 const Account = () => {
-    // const bookDatabase = useSelector((state) => state.books.bookDatabase);
-    // const user = useSelector((state) => state.account.user);
-    const dispatch = useDispatch();
-
-    // const listOfBooks = createRandomList(bookDatabase, 10);
-
+    const dispatch = useDispatch()
     const navigation = useNavigation();
+
+    const { user, creationList, creationIdList, loading } = useSelector((state) => state.account);
+
+    useEffect(() => {
+        if (creationIdList.length != 0) {
+            dispatch(fetchAccountCreations(creationIdList));
+        }
+    }, [creationIdList]);
+
+    if (loading) return null;
 
     const handleLogout = () => {
         Alert.alert(
@@ -57,61 +58,52 @@ const Account = () => {
             <ScrollView bounces={false} overScrollMode="never" style={{ width: '100%' }}>
                 <ScreenTitle title={"TÀI KHOẢN"} icon={"person"} />
 
-                {/* <View style={{ width: '100%', height: 400, zIndex: -1 }}>
+                <View style={{ width: '100%', height: 400, zIndex: -1 }}>
                     <Filigree9 />
-                </View> */}
+                </View>
 
                 {/* avt */}
-                {/* <View style={styles.avatarWrapper}>
+                <View style={styles.avatarWrapper}>
                     <View style={styles.avatarContainer}>
                         <Image
-                            source={{ uri: user?.avatar || 'https://www.cnet.com/a/img/resize/e58477ebf3a1bb812b68953ea2bf6c5cdc93e825/hub/2019/07/08/631653cd-fb27-476a-bb76-1e8f8b70b87e/troller-t4-trail-1.jpg?auto=webp&width=1200' }}
+                            source={{
+                                uri: user?.avatar || 'https://www.cnet.com/a/img/resize/e58477ebf3a1bb812b68953ea2bf6c5cdc93e825/hub/2019/07/08/631653cd-fb27-476a-bb76-1e8f8b70b87e/troller-t4-trail-1.jpg?auto=webp&width=1200'
+                            }}
                             style={styles.avatar}
                         />
                     </View>
-                </View> */}
+                </View>
 
-                {/* <View style={styles.ornateTextbox_white}>
-                    <View>
-                        <Text style={styles.username}>Alt Schwift X
-                            <Text style={styles.iconWrapper}>
-                                <Image
-                                    source={require('../assets/edit.png')}
-                                    style={styles.edit}
-                                />
-                            </Text>
-                        </Text>
-                        <Text style={styles.userSubtitle}>Đoàn Thị Nguyên Sa</Text>
-
+                <View style={styles.ornateTextbox_white}>
+                    <View style={{ marginTop: 10 }}>
+                        <Text style={styles.username}>{user.username}</Text>
+                        <Text style={styles.userSubtitle}>{user.realname}</Text>
                     </View>
                     <Filigree5_Bottom />
                     <LinearGradient colors={[colors.black, 'transparent']}
                         style={[globalStyles.shadow, globalStyles.topShadow, { opacity: 0.3, }]}
                     />
-                </View> */}
+                </View>
 
-                {/* <BookList bookType="SÁNG TÁC CỦA BẠN"
-                    listOfBooks={listOfBooks}
-                    customDestination={"LibraryListingScreen"}
-                /> */}
+                <CreationList data={creationList} />
 
-                {/* <View style={styles.buttonContainer}>
+                <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        onPress={() => navigation.navigate('AccountEdit')}
+                        onPress={() => navigation.navigate('AccountUpdate')}
                     >
                         <OrnateButton
-                            ButtonText={"Sửa Thông Tin Tài Khoản"}
-                            ButtonIcon={"add"}
+                            ButtonText={"Cài đặt"}
+                            ButtonIcon={"settings"}
                         />
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={handleLogout}>
-                        <OrnateButton
+                        <OrnateButtonRed
                             ButtonText={"Đăng Xuất"}
-                            ButtonIcon={"add"}
+                            ButtonIcon={"person"}
                         />
                     </TouchableOpacity>
-                </View> */}
+                </View>
             </ScrollView>
             <AppFooter currentScreen={4} />
         </View>
@@ -144,7 +136,7 @@ const styles = StyleSheet.create({
         // canh chỉnh tên hiển thị
         alignSelf: 'center',
         alignItems: 'center',
-        paddingVertical: 20,
+        // paddingVertical: 10,
     },
 
 
@@ -160,8 +152,8 @@ const styles = StyleSheet.create({
         width: 135,        // tăng kích thước
         height: 135,       // tăng kích thước
         borderRadius: 70,  // bán kính = 1/2 để giữ hình tròn
-        borderWidth: 2,
-        borderColor: '#FFD700',
+        borderWidth: 4,
+        borderColor: colors.gold,
         backgroundColor: '#000',
         resizeMode: 'cover',
     },
@@ -176,13 +168,15 @@ const styles = StyleSheet.create({
     },
 
     username: {
-        fontSize: 18,
+        textAlign: 'center',
+        fontSize: 25,
         fontWeight: 'bold',
         color: '#000',
     },
 
     userSubtitle: {
-        fontSize: 14,
+        textAlign: 'center',
+        fontSize: 16,
         color: '#555',
         marginTop: 3,
     },

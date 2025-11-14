@@ -7,7 +7,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { colors, globalStyles } from '../components/GlobalStyle';
 import { Filigree9 } from '../components/decorations/Filigree';
 
+import { DecoButton } from '../components/decorations/DecoButton';
+
 import AppHeader from '../components//AppHeader';
+import AppFooter from '../components/AppFooter';
 import ScreenTitle from '../components/ScreenTitle';
 
 const AccountUpdate = () => {
@@ -55,7 +58,7 @@ const AccountUpdate = () => {
         <View style={styles.avatarWrapper}>
           <View style={styles.avatarContainer}>
             <Image
-              source={{ uri: 'https://www.cnet.com/a/img/resize/e58477ebf3a1bb812b68953ea2bf6c5cdc93e825/hub/2019/07/08/631653cd-fb27-476a-bb76-1e8f8b70b87e/troller-t4-trail-1.jpg?auto=webp&width=1200' }}
+              source={{ uri: user.avatar }}
               style={styles.avatar}
             />
           </View>
@@ -92,17 +95,13 @@ const AccountUpdate = () => {
           />
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <LinearGradient
-              colors={['#FFD700', '#FFA500']}
-              style={styles.saveButtonGradient}
-            >
-              <Text style={styles.saveText}>LƯU</Text>
-            </LinearGradient>
+              <DecoButton ButtonText={"Lưu"}/>
           </TouchableOpacity>
         </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
+      <AppFooter currentScreen={4}/>
     </View>
   );
 };

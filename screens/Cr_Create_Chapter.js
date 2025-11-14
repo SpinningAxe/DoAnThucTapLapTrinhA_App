@@ -5,11 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from "react-redux";
 import { store } from '../store';
 import {
-    uploadNewCreationToFirestore,
-    initNewCreation,
     setChapter,
-    fetchCreationById,
-    fetchChaptersOfSelectedCreation,
     initNewChapter,
     uploadNewChapter
 } from '../store/slices/accountSlice';

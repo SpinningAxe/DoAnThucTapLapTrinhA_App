@@ -24,17 +24,14 @@ const Quotes = [
 
 const createRandomList = (array, count) => {
     if (!array || array.length === 0) return [];
-    return [...array]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, count);
+    const newArray = [...array].sort(() => Math.random() - 0.5).slice(0, count);
+    return newArray;
 };
 const getRandomInt = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-const Catalogue = () => {
-    const { booksDatabase } = useSelector((state) => state.books);
-
+const Catalogue = ({ booksDatabase }) => {
     const catalogueList = createRandomList(booksDatabase, 10);
     const randomQuote = getRandomInt(0, Quotes.length - 1);
     const catalogueRow_1 = catalogueList.slice(0, 3);
@@ -104,9 +101,7 @@ export default function BookHome() {
         dispatch(fetchBooks());
     }, []);
 
-    //   if (error) return <Text style={styles.centered}>Error: {error}</Text>;
-
-    const _bookList1 = createRandomList(booksDatabase, 10);
+    const bookList = booksDatabase;
 
     return (
         <View style={styles.container}>
@@ -115,13 +110,13 @@ export default function BookHome() {
             <ScrollView bounces={false} overScrollMode="never" style={{ width: '100%' }}>
                 {loading ? <ActivityIndicator style={styles.centered} /> :
                     <View>
-                        <Catalogue />
+                        <Catalogue booksDatabase={booksDatabase} />
                         <CurrentBook />
-                        <BookList title="Mới Cập Nhật" data={_bookList1} />
+                        <BookList title="Mới Cập Nhật" data={createRandomList(bookList, 10)} />
 
-                        {/* <BookList title="Nổi Bật" data={booksDatabase} />
+                        <BookList title="Nổi Bật" data={createRandomList(bookList, 10)} />
 
-                        <BookList title="Hàng Đầu" data={booksDatabase} /> */}
+                        <BookList title="Hàng Đầu" data={createRandomList(bookList, 10)} />
 
                         <View style={globalStyles.bottomPadding} />
                     </View>

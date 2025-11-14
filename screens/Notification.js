@@ -19,7 +19,7 @@ const Notification = () => {
   );
 
   useEffect(() => {
-    dispatch(loadNotifications());
+      dispatch(loadNotifications());
   }, [dispatch]);
 
   if (!isLogin) return (

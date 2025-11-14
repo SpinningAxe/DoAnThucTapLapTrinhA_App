@@ -9,9 +9,9 @@ import { Filigree2, Filigree5_Top, Filigree5_Bottom } from '../components/decora
 import { OrnateButton, OrnateOption } from '../components/decorations/DecoButton';
 import { updateCreationField } from '../store/slices/accountSlice';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { fetchGenre } from '../store/slices/bookSlice';
 
-const languageList = ["Tiếng Việt", "Tiếng Anh", "Tiếng Trung", "Tiếng Nhật"] // require("../assets/_languageList.json");
-const genreDatabase = []// require("../assets/_genreDatabase.json")
+const languageList = ["Tiếng Việt", "Tiếng Anh", "Tiếng Trung", "Tiếng Nhật"]
 
 const CreateStoryHeader = ({ fieldToUpdate, valueToUpdate }) => {
     const navigation = useNavigation();
@@ -406,7 +406,9 @@ const translator_display = (translator, setTranslator) => {
     )
 }
 
-const genreList_display = (genreList, setGenreList) => {
+const genreList_display = (loading, genreDatabase, genreList, setGenreList) => {
+    if (loading) return null;
+    
     return (
         <View style={styles.ornateTextbox}>
             <LinearGradient
@@ -466,6 +468,7 @@ const genreList_display = (genreList, setGenreList) => {
 }
 
 const Cr_Update_Field = () => {
+    const dispatch = useDispatch();
     const { selectedCreation, fieldToUpdate } = useSelector((state) => state.account);
 
     const [cover, setCover] = useState(selectedCreation.cover);
@@ -479,6 +482,11 @@ const Cr_Update_Field = () => {
     const [genreList, setGenreList] = useState(selectedCreation.genreList);
 
     const [valueToUpdate, setValueToUpdate] = useState(null);
+
+    const { genreDatabase, loading } = useSelector((state) => (state.books));
+    useEffect(() => {
+        dispatch(fetchGenre());
+    }, [])
 
     const screenDisplay = useMemo(() => {
         switch (fieldToUpdate) {
@@ -505,7 +513,7 @@ const Cr_Update_Field = () => {
                 return translator_display(translator, setTranslator);
             case "genreList":
                 setValueToUpdate(genreList);
-                return genreList_display(genreList, setGenreList);
+                return genreList_display(loading, genreDatabase, genreList, setGenreList);
             default:
                 console.log("unknown screen mode");
                 return null;
