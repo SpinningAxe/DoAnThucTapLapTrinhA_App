@@ -58,7 +58,9 @@ export default function App() {
           <Stack.Screen name="Library" component={Library} />
           <Stack.Screen name="LibraryListing" component={LibraryListing} />
           <Stack.Screen name="GenreListing" component={GenreListing} />
-
+          
+          {/* <Stack.Screen name="Login" component={Login} /> */}
+          
           <Stack.Screen name="TEMP_Login" component={TEMP_Login} />
         </Stack.Navigator>
       </NavigationContainer>

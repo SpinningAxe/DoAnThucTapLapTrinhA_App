@@ -67,14 +67,14 @@ const LoginComponent = () => {
       loginUser({
         email,
         password,
-        onSuccess: () => navigation.replace("MainScreen"),
+        onSuccess: () => navigation.replace("BookHome"),
       })
     );
   };
 
   // ✅ Nếu user Redux tồn tại → điều hướng
   useEffect(() => {
-    if (user) navigation.replace("MainScreen");
+    if (user) navigation.replace("BookHome");
   }, [user]);
 
   // ✅ Firebase Google Sign-In logic
@@ -96,7 +96,7 @@ const LoginComponent = () => {
 
           console.log("✅ Firebase user:", user);
           Alert.alert("Thành công", `Xin chào ${user.displayName || user.email}!`);
-          navigation.replace("MainScreen");
+          navigation.replace("BookHome");
         } catch (error) {
           console.log("❌ Lỗi Firebase Auth:", error);
           Alert.alert("Lỗi", "Không thể đăng nhập Google!");

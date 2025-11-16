@@ -72,6 +72,8 @@ const creationChapterTemplate = {
     lastUpdateDate: '',
 }
 
+//----------------------------------------------------------------------------------------//
+
 // 🔹 Đăng ký tài khoản
 export const registerUser = createAsyncThunk(
     "account/registerUser",
@@ -199,6 +201,8 @@ export const forgotPassword = createAsyncThunk(
         }
     }
 );
+
+//----------------------------------------------------------------------------------------//
 
 export const TEMP_fetchTestAccount = createAsyncThunk(
     "account/TEMP_fetchTestAccount",
@@ -975,6 +979,7 @@ const accountSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
+            //----------------------------------------------------------------------------------------//
             // 🔹 Login
             .addCase(loginUser.pending, (state) => {
                 state.loading = true;
@@ -1003,6 +1008,7 @@ const accountSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             });
+            //----------------------------------------------------------------------------------------//
         ;
 
     },
