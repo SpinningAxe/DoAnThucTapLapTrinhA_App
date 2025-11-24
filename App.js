@@ -22,7 +22,7 @@ import AccountUpdate from './screens/AccountUpdate';
 import Notification from './screens/Notification';
 import Library from './screens/Library';
 import LibraryListing from './screens/LibraryListing';
-// import Login from './screens/Login';
+import Login from './screens/Login';
 import GenreListing from './screens/GenreListing';
 import TEMP_Login from './screens/TEMP_Login';
 
@@ -35,10 +35,11 @@ export default function App() {
   return (
     <Provider store={store}>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="BookHome"
+        <Stack.Navigator initialRouteName="Login"
           screenOptions={{
             headerShown: false,
           }}>
+          <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="BookHome" component={BookHome} />
           <Stack.Screen name="BookDetail" component={BookDetail} />
           <Stack.Screen name="BookPage" component={BookPage} />
@@ -59,7 +60,6 @@ export default function App() {
           <Stack.Screen name="LibraryListing" component={LibraryListing} />
           <Stack.Screen name="GenreListing" component={GenreListing} />
           
-          {/* <Stack.Screen name="Login" component={Login} /> */}
           
           <Stack.Screen name="TEMP_Login" component={TEMP_Login} />
         </Stack.Navigator>
