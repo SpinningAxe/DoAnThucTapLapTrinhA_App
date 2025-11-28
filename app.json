@@ -13,9 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "bundleIdentifier": "com.doanthuctaplaptrinh.app",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.doanthuctaplaptrinh.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
