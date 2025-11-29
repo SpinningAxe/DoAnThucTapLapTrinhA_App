@@ -2,11 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, FlatList } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { useRoute } from "@react-navigation/native";
 
 import { colors, globalStyles, bookCover } from '../components/GlobalStyle';
 
-import { BookList_Detail } from '../components/BookList';
 import { Filigree1, Filigree3_Simple, Filigree5_Bottom } from '../components/decorations/Filigree';
 import { DecoButton, DecoButton_Dark } from '../components/decorations/DecoButton';
 
@@ -17,7 +15,7 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchChaptersOfSelectedBook, setSelectedChapter } from "../store/slices/bookSlice";
-import { addBookToLibrary, removeBookFromLibrary, setCurrentBookId, setCurrentChapterNum } from "../store/slices/accountSlice";
+import { addBookToLibrary, removeBookFromLibrary, setCurrentBookId, setCurrentChapterNum, updateCurrentBookAndChapter } from "../store/slices/accountSlice";
 
 const BookInfo = ({ selectedBook }) => {
     const navigation = useNavigation();
@@ -357,9 +355,10 @@ const MoreDetailsOption2 = () => {
         return (
             <TouchableOpacity style={styles.cc_container}
                 onPress={() => {
-                    dispatch((setSelectedChapter(chapter)))
-                    dispatch((setCurrentBookId(chapter.bookId)))
-                    dispatch((setCurrentChapterNum(chapter.chapterNum)))
+                    dispatch(setSelectedChapter(chapter))
+                    dispatch(setCurrentBookId(chapter.bookId))
+                    dispatch(setCurrentChapterNum(chapter.chapterNum))
+                    dispatch(updateCurrentBookAndChapter({ currentBookId: chapter.bookId, currentChapterNum: chapter.chapterNum }))
                     navigation.navigate("BookPage")
                 }}
             >
@@ -465,6 +464,7 @@ const BookDetail = () => {
                         dispatch(setCurrentBookId(selectedBook.bookId))
                         dispatch(setCurrentChapterNum(1))
                         dispatch(setSelectedChapter(chaptersOfSelectedBook[0]))
+                        dispatch(updateCurrentBookAndChapter({ currentBookId: selectedBook.bookId, currentChapterNum: 1 }))
                         navigation.navigate('BookPage')
                     }}
                 >

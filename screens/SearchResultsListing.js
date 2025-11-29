@@ -210,32 +210,20 @@ const BookItem = ({ navigation, book }) => {
     )
 }
 
-const BookListing = ({ navigation }) => {
-    const { searchResults, booksForBookListing, bookListingTitle, loading, error } = useSelector((state) => state.books);
-    const dispatch = useDispatch()
-
-    const [bookList, setBookList] = useState(searchResults)
-    useEffect(() => {
-        setBookList(searchResults);
-        if (bookListingTitle != "Tìm kiếm" && bookListingTitle != "Thể loại") {
-            dispatch(fetchBooksForBookListing());
-            setBookList(booksForBookListing);
-        }
-
-    }, [dispatch]);
+const SearchResultListing = ({ navigation }) => {
+    const { searchResults, bookListingTitle, loading, error } = useSelector((state) => state.books);
 
     const [page, setPage] = useState(1);
     if (loading) return null;
 
-    const totalPage = Math.ceil(bookList.length / 10);
-
+    const totalPage = Math.ceil(searchResults.length / 10);
     return (
         <View style={styles.container}>
             <AppHeader />
             <ScrollView style={{ width: '100%' }} bounces={false} overScrollMode="never">
                 <ResultCount
                     title={bookListingTitle}
-                    bookList={bookList}
+                    bookList={searchResults}
                     totalPage={totalPage}
                 />
 
@@ -254,10 +242,10 @@ const BookListing = ({ navigation }) => {
                     />
                 }
 
-                <ResultDisplay page={page} bookList={bookList} />
+                <ResultDisplay page={page} bookList={searchResults} />
 
                 {
-                    (totalPage != 1 && bookList.length > 4) &&
+                    (totalPage != 1 && searchResults.length > 4) &&
                     <ResultButton page={page}
                         setPage={setPage}
                         totalPage={totalPage}
@@ -569,4 +557,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default BookListing;
+export default SearchResultListing;

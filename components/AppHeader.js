@@ -277,7 +277,7 @@ const AppHeader = ({ hideLine }) => {
                             dispatch(setBookListingTitle("Tìm kiếm"))
                             dispatch(setSearchKeyword(text))
                             dispatch(searchBooks(text))
-                            navigation.navigate('BookListing')
+                            navigation.navigate('SearchResultListing')
                         }}
                     />
                 </View>

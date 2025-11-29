@@ -23,6 +23,8 @@ import Notification from './screens/Notification';
 import Library from './screens/Library';
 import LibraryListing from './screens/LibraryListing';
 // import Login from './screens/Login';
+import SearchResultListing from './screens/SearchResultsListing';
+
 import GenreListing from './screens/GenreListing';
 import TEMP_Login from './screens/TEMP_Login';
 
@@ -58,7 +60,7 @@ export default function App() {
           <Stack.Screen name="Library" component={Library} />
           <Stack.Screen name="LibraryListing" component={LibraryListing} />
           <Stack.Screen name="GenreListing" component={GenreListing} />
-          
+          <Stack.Screen name="SearchResultListing" component={SearchResultListing} />
           {/* <Stack.Screen name="Login" component={Login} /> */}
           
           <Stack.Screen name="TEMP_Login" component={TEMP_Login} />

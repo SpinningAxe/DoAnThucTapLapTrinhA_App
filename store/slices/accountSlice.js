@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
 import { collection, query, where, getDoc, getDocs, setDoc, updateDoc, deleteDoc, doc, Timestamp, documentId, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "../../firebase";
 
@@ -38,7 +38,7 @@ const initialState = {
     notificationList: [], //in account
 
     user: null,
-    
+
     uploading: false,
     loading: false,
     error: null,
@@ -656,7 +656,6 @@ export const removeBookFromLibrary = createAsyncThunk(
     "accounts/removeBookFromLibrary",
     async (bookId, { getState, rejectWithValue }) => {
         try {
-            console.log(bookId);
             if (bookId == null) return null;
 
             const state = getState();
@@ -677,6 +676,31 @@ export const removeBookFromLibrary = createAsyncThunk(
         }
     }
 );
+
+export const updateCurrentBookAndChapter = createAsyncThunk(
+    "accounts/updateCurrentBookAndChapter",
+    async ({currentBookId, currentChapterNum}, { getState, rejectWithValue }) => {
+        try {
+            if (currentBookId == null) return null;
+
+            const state = getState();
+
+            const accountId = state.account.user.id;
+            const accountRef = doc(db, "Users", accountId);
+
+            await updateDoc(accountRef, {
+                currentBookId: String(currentBookId),
+                currentBookChapterNum: currentChapterNum,
+            });
+
+            console.log(`Book ${currentBookId} is now current book`);
+            return String(currentBookId);
+        } catch (error) {
+            console.error("Error removeBookFromLibrary:", error);
+            return rejectWithValue(error.message);
+        }
+    }
+)
 
 const getCurrentDate = () => {
     const date = new Date();
@@ -979,6 +1003,18 @@ const accountSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
+            .addCase(updateCurrentBookAndChapter.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateCurrentBookAndChapter.fulfilled, (state, action) => {
+                state.loading = false;
+            })
+            .addCase(updateCurrentBookAndChapter.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })            
+            
             //----------------------------------------------------------------------------------------//
             // 🔹 Login
             .addCase(loginUser.pending, (state) => {
@@ -1008,7 +1044,7 @@ const accountSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             });
-            //----------------------------------------------------------------------------------------//
+        //----------------------------------------------------------------------------------------//
         ;
 
     },

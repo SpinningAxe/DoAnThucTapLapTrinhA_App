@@ -8,6 +8,7 @@ import { colors } from '../components/GlobalStyle';
 import { Filigree5_Bottom, Filigree5_Top, Filigree6_Top, Filigree6_Bottom, Filigree1, Filigree2 } from '../components/decorations/Filigree';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedBook, setSelectedChapter } from '../store/slices/bookSlice';
+import { setCurrentChapterNum, updateCurrentBookAndChapter } from '../store/slices/accountSlice';
 
 const Header = ({ showChapterPicker, setShowChapterPicker }) => {
   const navigation = useNavigation();
@@ -147,6 +148,8 @@ const ChapterPicker = ({ setShowChapterPicker }) => {
       <TouchableOpacity style={styles.cc_container}
         onPress={() => {
           dispatch(setSelectedChapter(chapter))
+          dispatch(setCurrentChapterNum(chapter.chapterNum))
+          dispatch(updateCurrentBookAndChapter({ currentBookId: chapter.bookId, currentChapterNum: chapter.chapterNum }))
           setShowChapterPicker(false)
         }}
       >

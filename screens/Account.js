@@ -29,7 +29,19 @@ const Account = () => {
         }
     }, [creationIdList]);
 
-    if (loading) return null;
+    if (loading) return (
+        <View style={styles.container}>
+            <AppHeader />
+            <ScrollView bounces={false} overScrollMode="never" style={{ width: '100%' }}>
+                <View style={{ width: '100%', alignItems: 'center', marginTop: 30, marginBottom: 20 }}>
+                    <Text style={{ color: colors.white, letterSpacing: 2 }}>
+                        Đang tải ...
+                    </Text>
+                </View>
+            </ScrollView>
+            <AppFooter currentScreen={4} />
+        </View >
+    );
 
     const handleLogout = () => {
         Alert.alert(

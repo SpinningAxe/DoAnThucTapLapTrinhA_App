@@ -143,7 +143,7 @@ const Cr_Create_2 = () => {
     const username = useSelector((state) => state.account.user.username);
 
     const [authorIsAccount, setAuthorIsAccount] = useState(true);
-    const [author, setAuthor] = useState('');
+    const [author, setAuthor] = useState(username);
 
     const [genreList, setGenreList] = useState([]);
     const [openGenreList, setOpenGenreList] = useState(false);

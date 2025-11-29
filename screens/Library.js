@@ -205,7 +205,19 @@ const Library = () => {
 
     const [page, setPage] = useState(1);
 
-    if (loading) return null;
+    if (loading) return (
+        <View style={styles.container}>
+            <AppHeader />
+            <ScrollView bounces={false} overScrollMode="never" style={{ width: '100%' }}>
+                <View style={{ width: '100%', alignItems: 'center', marginTop: 30, marginBottom: 20 }}>
+                    <Text style={{ color: colors.white, letterSpacing: 2 }}>
+                        Đang tải ...
+                    </Text>
+                </View>
+            </ScrollView>
+            <AppFooter currentScreen={1} />
+        </View >
+    );
 
     const totalPage = Math.ceil(libraryBookList.length / 10);
 

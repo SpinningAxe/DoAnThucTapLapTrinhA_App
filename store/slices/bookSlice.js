@@ -203,7 +203,7 @@ const booksSlice = createSlice({
 
       state.searchResults = state.booksDatabase.filter(book => book.genreList.includes(searchKeyword));
 
-      state.searchResults = [...new Set(state.searchResults)];
+      state.booksForBookListing = [...new Set(state.searchResults)];
       console.log("searchForBooks success.");
     },
   },

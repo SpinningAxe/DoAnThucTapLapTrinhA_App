@@ -101,6 +101,20 @@ export default function BookHome() {
         dispatch(fetchBooks());
     }, []);
 
+    if (loading) return (
+        <View style={styles.container}>
+            <AppHeader />
+            <ScrollView bounces={false} overScrollMode="never" style={{ width: '100%' }}>
+                <View style={{ width: '100%', alignItems: 'center', marginTop: 30, marginBottom: 20 }}>
+                    <Text style={{ color: colors.white, letterSpacing: 2 }}>
+                        Đang tải ...
+                    </Text>
+                </View>
+            </ScrollView>
+            <AppFooter currentScreen={0} />
+        </View >
+    );
+
     const bookList = booksDatabase;
 
     return (
@@ -108,19 +122,17 @@ export default function BookHome() {
             <AppHeader />
 
             <ScrollView bounces={false} overScrollMode="never" style={{ width: '100%' }}>
-                {loading ? <ActivityIndicator style={styles.centered} /> :
-                    <View>
-                        <Catalogue booksDatabase={booksDatabase} />
-                        <CurrentBook />
-                        <BookList title="Mới Cập Nhật" data={createRandomList(bookList, 10)} />
+                <View>
+                    <Catalogue booksDatabase={booksDatabase} />
+                    <CurrentBook />
+                    <BookList title="Mới Cập Nhật" data={createRandomList(bookList, 10)} />
 
-                        <BookList title="Nổi Bật" data={createRandomList(bookList, 10)} />
+                    <BookList title="Nổi Bật" data={createRandomList(bookList, 10)} />
 
-                        <BookList title="Hàng Đầu" data={createRandomList(bookList, 10)} />
+                    <BookList title="Hàng Đầu" data={createRandomList(bookList, 10)} />
 
-                        <View style={globalStyles.bottomPadding} />
-                    </View>
-                }
+                    <View style={globalStyles.bottomPadding} />
+                </View>
             </ScrollView>
             <AppFooter currentScreen={0} />
         </View>

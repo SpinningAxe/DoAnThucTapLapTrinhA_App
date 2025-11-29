@@ -61,7 +61,7 @@ const CreationItem = ({ creation }) => {
                         </Text>
                     </View>
                     {
-                        creation.lastUpdateDate != null &&
+                        (creation.lastUpdateDate != null && creation.lastUpdateDate != creation.publishDate) &&
                         <View style={[styles.bi_row, { marginTop: 0 }]}>
                             <Text style={{ color: colors.lightgray, width: 100 }}>
                                 CẬP NHẬT:
@@ -84,7 +84,19 @@ const Cr_Home = () => {
     const dispatch = useDispatch();
     const { isLogin, selectedCreation, loading, uploading } = useSelector((state) => (state.account));
 
-    if (loading) return null;
+    if (loading) return (
+        <View style={styles.container}>
+            <AppHeader />
+            <ScrollView bounces={false} overScrollMode="never" style={{ width: '100%' }}>
+                <View style={{ width: '100%', alignItems: 'center', marginTop: 30, marginBottom: 20 }}>
+                    <Text style={{ color: colors.white, letterSpacing: 2 }}>
+                        Đang tải ...
+                    </Text>
+                </View>
+            </ScrollView>
+            <AppFooter currentScreen={2} />
+        </View >
+    );
 
     if (!isLogin) return (
         <View style={styles.container}>
