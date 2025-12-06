@@ -28,7 +28,7 @@ const AccountUpdate = () => {
   // Cập nhật state khi user data thay đổi
   useEffect(() => {
     if (user) {
-      setUsername(user.username || "");
+      setUsername(user?.username || "");
       setRealname(user.realname || "");
       setEmail(user.email || "");
     }

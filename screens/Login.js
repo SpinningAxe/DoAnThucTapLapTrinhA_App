@@ -27,7 +27,8 @@ import { useNavigation } from "@react-navigation/native";
 
 // ✅ Redux
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser, registerUser,loginGoogle } from "../store/slices/accountSlice";
+import { loginUser, registerUser, loginGoogle } from "../store/slices/accountSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 
@@ -58,24 +59,71 @@ const [request, response, promptAsync] = Google.useAuthRequest({
 
   // ✅ Đăng nhập email/password (backend)
   const handleAuth = () => {
+    console.log("handleAuth called", { email, password });
+    
     if (!email || !password) {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
       return;
     }
 
-    dispatch(
-      loginUser({
-        email,
-        password,
-        onSuccess: () => navigation.replace("BookHome"),
-      })
-    );
+    // Kiểm tra nếu là admin
+    if (email.toLowerCase() === "admin" && password === "admin123") {
+      console.log("Admin login detected");
+      // Tạo user object cho admin
+      const adminUser = {
+        id: "admin",
+        username: "admin",
+        name: "Admin",
+        email: "admin",
+        role: "admin"
+      };
+      
+      // Lưu vào AsyncStorage và dispatch action
+      AsyncStorage.multiSet([
+        ["user", JSON.stringify(adminUser)],
+        ["token", "admin_token"],
+      ]).then(() => {
+        console.log("Admin user saved to AsyncStorage");
+        // Dispatch action để set user admin vào state
+        dispatch({ type: "account/loginUser/fulfilled", payload: adminUser });
+        Alert.alert("Thành công", "Xin chào Admin!");
+        navigation.replace("AdminAccount");
+      }).catch((error) => {
+        console.error("Error saving admin user:", error);
+        Alert.alert("Lỗi", "Không thể đăng nhập!");
+      });
+    } else {
+      console.log("Regular user login - calling API");
+      dispatch(
+        loginUser({
+          email,
+          password,
+          onSuccess: () => {
+            console.log("Login success, navigating to BookHome");
+            navigation.replace("BookHome");
+          },
+        })
+      ).unwrap().catch((error) => {
+        console.error("Login error:", error);
+        Alert.alert("Lỗi", error || "Đăng nhập thất bại! Vui lòng kiểm tra kết nối mạng hoặc thông tin đăng nhập.");
+      });
+    }
   };
 
   // ✅ Nếu user Redux tồn tại → điều hướng
   useEffect(() => {
-    if (user) navigation.replace("BookHome");
-  }, [user]);
+    if (user) {
+      console.log("User state changed:", user);
+      // Kiểm tra nếu là admin
+      if (user && (user.username === "admin" || user.email === "admin" || user.role === "admin")) {
+        console.log("Navigating to AdminAccount");
+        navigation.replace("AdminAccount");
+      } else {
+        console.log("Navigating to BookHome");
+        navigation.replace("BookHome");
+      }
+    }
+  }, [user, navigation]);
 
     // ---------- GOOGLE LOGIN ----------
   useEffect(() => {
@@ -221,6 +269,8 @@ const SignUpComponent = ({ setIsLogin }) => {
   const dispatch = useDispatch();
 
   const handleAuth = async () => {
+    console.log("Register handleAuth called", { email, username });
+    
     if (!email || !username || !password || !repeatPassword) {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
       return;
@@ -232,14 +282,17 @@ const SignUpComponent = ({ setIsLogin }) => {
     }
 
     try {
+      console.log("Calling registerUser API");
       await dispatch(
         registerUser({ email, username, password, repeatPassword })
       ).unwrap();
+      console.log("Register success");
       setIsLogin(true);
       setPassword("");
       setRepeatPassword("");
     } catch (err) {
-      console.log(err);
+      console.error("Register error:", err);
+      Alert.alert("Lỗi", err || "Đăng ký thất bại! Vui lòng kiểm tra kết nối mạng hoặc thử lại.");
     }
   };
 

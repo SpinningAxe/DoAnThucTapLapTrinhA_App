@@ -791,6 +791,19 @@ const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
 };
 
+// 🔹 Logout user
+export const logoutUser = createAsyncThunk(
+  "account/logoutUser",
+  async (_, { rejectWithValue }) => {
+    try {
+      await AsyncStorage.multiRemove([STORAGE_KEY, TOKEN_KEY]);
+      return null;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const accountSlice = createSlice({
   name: "account",
   initialState: initialState,
@@ -1115,6 +1128,33 @@ const accountSlice = createSlice({
         state.loading = false;
       })
       .addCase(registerUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔹 Logout
+      .addCase(logoutUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.loading = false;
+        state.isLogin = false;
+        state.user = null;
+        state.accountId = null;
+        state.username = null;
+        state.creationIdList = [];
+        state.creationList = [];
+        state.currentBookId = null;
+        state.currentBook = null;
+        state.currentChapterNum = null;
+        state.chaptersOfCurrentBook = [];
+        state.libraryBookIdList = [];
+        state.libraryBookList = [];
+        state.notificationList = [];
+        state.error = null;
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
