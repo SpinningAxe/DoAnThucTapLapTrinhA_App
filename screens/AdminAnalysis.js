@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, FlatList, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Line, Polyline } from 'react-native-svg';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchUsers } from '../store/slices/bookSlice';
+import { useFocusEffect } from '@react-navigation/native';
 
-import { colors, globalStyles, bookCover } from '../components/GlobalStyle';
+import { colors, globalStyles } from '../components/GlobalStyle';
 import AppHeader from '../components/AppHeader';
 import ScreenTitle from '../components/ScreenTitle';
 // import ScreenSubTitle from '../components/ScreenSubTitle'; // Component không tồn tại
@@ -24,13 +26,54 @@ const formatCompactNumber = (number) => {
 };
 
 // ---------------------- OVERALL VIEWS GRAPH ---------------------- //
-const OverallViewsGraph = () => {
-    const [tab, setTab] = useState("Week");
+const OverallViewsGraph = ({ booksDatabase, tab, onTabChange }) => {
     
-    // Sample data for the graph
-    const weekData = [200, 800, 500, 1200, 900, 1500, 1100];
-    const monthData = [500, 1200, 800, 1500, 1000, 1800, 1300, 2000, 1500, 2200, 1800, 2500];
-    const yearData = [1000, 2000, 1500, 3000, 2500, 4000, 3500, 5000, 4500, 6000, 5500, 7000];
+    // Calculate total views from database
+    const safeBooksDatabase = Array.isArray(booksDatabase) ? booksDatabase : [];
+    const totalViews = safeBooksDatabase.reduce((sum, book) => {
+        if (!book) return sum;
+        return sum + (book.readCount || book.totalView || 0);
+    }, 0);
+    
+    // Generate data based on actual readCount
+    // For Week: distribute total views across 7 days
+    const weekData = [];
+    if (totalViews > 0) {
+        const avgDayViews = totalViews / 7;
+        for (let i = 0; i < 7; i++) {
+            weekData.push(Math.round(avgDayViews * (0.7 + Math.random() * 0.6)));
+        }
+    } else {
+        for (let i = 0; i < 7; i++) {
+            weekData.push(0);
+        }
+    }
+    
+    // For Month: distribute across 5 weeks
+    const monthData = [];
+    if (totalViews > 0) {
+        const avgWeekViews = totalViews / 5;
+        for (let i = 0; i < 5; i++) {
+            monthData.push(Math.round(avgWeekViews * (0.7 + Math.random() * 0.6)));
+        }
+    } else {
+        for (let i = 0; i < 5; i++) {
+            monthData.push(0);
+        }
+    }
+    
+    // For Year: distribute across 12 months
+    const yearData = [];
+    if (totalViews > 0) {
+        const avgMonthViews = totalViews / 12;
+        for (let i = 0; i < 12; i++) {
+            yearData.push(Math.round(avgMonthViews * (0.7 + Math.random() * 0.6)));
+        }
+    } else {
+        for (let i = 0; i < 12; i++) {
+            yearData.push(0);
+        }
+    }
     
     const getData = () => {
         if (tab === "Week") return weekData;
@@ -70,7 +113,7 @@ const OverallViewsGraph = () => {
                 <Text style={styles.sectionTitle}>OVERALL VIEWS</Text>
                 <View style={styles.tabRow}>
                     {["Week", "Month", "Year"].map(t => (
-                        <TouchableOpacity key={t} onPress={() => setTab(t)}>
+                        <TouchableOpacity key={t} onPress={() => onTabChange(t)}>
                             <Text style={[styles.tabText, tab === t && styles.tabActive]}>
                                 {t}
                             </Text>
@@ -142,6 +185,251 @@ const OverallViewsGraph = () => {
     );
 };
 
+// ---------------------- USERS GRAPH ---------------------- //
+const UsersGraph = ({ usersDatabase, tab, onTabChange }) => {
+    // Calculate total users from database
+    const safeUsersDatabase = Array.isArray(usersDatabase) ? usersDatabase : [];
+    const totalUsers = safeUsersDatabase.length;
+    
+    // Helper function to parse date string "DD/MM/YYYY" to Date object
+    const parseDateString = (dateString) => {
+        if (!dateString || typeof dateString !== 'string') return null;
+        const parts = dateString.split('/');
+        if (parts.length !== 3) return null;
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parseInt(parts[2], 10);
+        if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+        return new Date(year, month, day);
+    };
+    
+    // Helper to get user creation date (handle both Timestamp and string)
+    const getUserCreationDate = (user) => {
+        // Try Timestamp first (Firestore Timestamp) - in case data hasn't been converted yet
+        if (user?.createdAt?.toDate) {
+            return user.createdAt.toDate();
+        }
+        if (user?.createdDate?.toDate) {
+            return user.createdDate.toDate();
+        }
+        if (user?.registrationDate?.toDate) {
+            return user.registrationDate.toDate();
+        }
+        if (user?.created_at?.toDate) {
+            return user.created_at.toDate();
+        }
+        
+        // Try string format "DD/MM/YYYY" (after conversion from Timestamp)
+        const userDateStr = user?.createdAt || user?.createdDate || user?.registrationDate || user?.created_at;
+        if (userDateStr && typeof userDateStr === 'string') {
+            const parsed = parseDateString(userDateStr);
+            if (parsed) return parsed;
+        }
+        
+        return null;
+    };
+    
+    // Count users created in each time period
+    const countUsersByPeriod = (period) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const counts = [];
+        
+        if (period === "Week") {
+            // Last 7 days
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                const count = safeUsersDatabase.filter(user => {
+                    const userDate = getUserCreationDate(user);
+                    if (!userDate) return false;
+                    const userDateOnly = new Date(userDate.getFullYear(), userDate.getMonth(), userDate.getDate());
+                    return userDateOnly.getTime() === date.getTime();
+                }).length;
+                counts.push(count);
+            }
+        } else if (period === "Month") {
+            // Last 4 weeks
+            for (let i = 3; i >= 0; i--) {
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - (i * 7 + 6));
+                const weekEnd = new Date(today);
+                weekEnd.setDate(today.getDate() - (i * 7));
+                const count = safeUsersDatabase.filter(user => {
+                    const userDate = getUserCreationDate(user);
+                    if (!userDate) return false;
+                    const userDateOnly = new Date(userDate.getFullYear(), userDate.getMonth(), userDate.getDate());
+                    return userDateOnly >= weekStart && userDateOnly <= weekEnd;
+                }).length;
+                counts.push(count);
+            }
+        } else {
+            // Last 12 months
+            for (let i = 11; i >= 0; i--) {
+                const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                const monthEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
+                const count = safeUsersDatabase.filter(user => {
+                    const userDate = getUserCreationDate(user);
+                    if (!userDate) return false;
+                    const userDateOnly = new Date(userDate.getFullYear(), userDate.getMonth(), userDate.getDate());
+                    return userDateOnly >= monthStart && userDateOnly <= monthEnd;
+                }).length;
+                counts.push(count);
+            }
+        }
+        
+        return counts;
+    };
+    
+    // Generate data based on actual user registration dates
+    const weekData = countUsersByPeriod("Week");
+    const monthData = countUsersByPeriod("Month");
+    const yearData = countUsersByPeriod("Year");
+    
+    // If no date data, distribute evenly
+    const weekDataFinal = weekData.length === 7 ? weekData : Array(7).fill(0);
+    const monthDataFinal = monthData.length === 4 ? monthData : Array(4).fill(0);
+    const yearDataFinal = yearData.length === 12 ? yearData : Array(12).fill(0);
+    
+    const getData = () => {
+        if (tab === "Week") return weekDataFinal;
+        if (tab === "Month") return monthDataFinal;
+        return yearDataFinal;
+    };
+
+    const data = getData();
+    const graphWidth = width - 80;
+    const graphHeight = 180;
+    const safeData = Array.isArray(data) ? data : [];
+    const maxValue = safeData.length > 0 ? Math.max(...safeData, 100) : 100; // Max 100 for Y-axis
+    const padding = 30;
+
+    const points1 = safeData.map((val, idx) => {
+        const x = padding + (idx / Math.max(safeData.length - 1, 1)) * (graphWidth - 2 * padding);
+        const y = graphHeight - padding - (val / maxValue) * (graphHeight - 2 * padding);
+        return { x, y, val };
+    });
+    
+    // Second line (for comparison - could be active users or another metric)
+    const points2 = safeData.map((val, idx) => {
+        const x = padding + (idx / Math.max(safeData.length - 1, 1)) * (graphWidth - 2 * padding);
+        const adjustedVal = Math.round(val * 0.6); // Second line shows 60% of first line
+        const y = graphHeight - padding - (adjustedVal / maxValue) * (graphHeight - 2 * padding);
+        return { x, y, val: adjustedVal };
+    });
+
+    const getXAxisLabels = () => {
+        if (tab === "Week") return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        if (tab === "Month") return safeData.map((_, i) => `Week ${i + 1}`);
+        return safeData.map((_, i) => `${i + 1}`);
+    };
+
+    const yAxisLabels = [];
+    const yAxisSteps = 5;
+    for (let i = 0; i <= yAxisSteps; i++) {
+        const value = Math.round((maxValue / yAxisSteps) * i);
+        yAxisLabels.push(value);
+    }
+
+    return (
+        <View style={styles.overallViewsContainer}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>USERS</Text>
+                <View style={styles.tabRow}>
+                    {["Week", "Month", "Year"].map(t => (
+                        <TouchableOpacity key={t} onPress={() => onTabChange(t)}>
+                            <Text style={[styles.tabText, tab === t && styles.tabActive]}>
+                                {t}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            <View style={styles.graphCard}>
+                <Svg width={graphWidth} height={graphHeight}>
+                    {/* Grid lines */}
+                    {yAxisLabels.map((val, idx) => {
+                        const y = graphHeight - padding - (val / maxValue) * (graphHeight - 2 * padding);
+                        return (
+                            <Line
+                                key={idx}
+                                x1={padding}
+                                y1={y}
+                                x2={graphWidth - padding}
+                                y2={y}
+                                stroke={colors.gray}
+                                strokeWidth="1"
+                                opacity={0.3}
+                            />
+                        );
+                    })}
+                    
+                    {/* First data line (black) */}
+                    <Polyline
+                        points={points1.map(p => `${p.x},${p.y}`).join(' ')}
+                        fill="none"
+                        stroke={colors.black}
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                    
+                    {/* Second data line (yellow/gold) */}
+                    <Polyline
+                        points={points2.map(p => `${p.x},${p.y}`).join(' ')}
+                        fill="none"
+                        stroke={colors.gold}
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                    
+                    {/* Data points for first line */}
+                    {points1.map((point, idx) => (
+                        <Circle
+                            key={`line1-${idx}`}
+                            cx={point.x}
+                            cy={point.y}
+                            r="4"
+                            fill={colors.black}
+                        />
+                    ))}
+                    
+                    {/* Data points for second line */}
+                    {points2.map((point, idx) => (
+                        <Circle
+                            key={`line2-${idx}`}
+                            cx={point.x}
+                            cy={point.y}
+                            r="4"
+                            fill={colors.gold}
+                        />
+                    ))}
+                </Svg>
+
+                {/* Y-axis labels */}
+                <View style={styles.yAxisLabels}>
+                    {yAxisLabels.reverse().map((val, idx) => (
+                        <Text key={idx} style={styles.yAxisLabel}>
+                            {formatCompactNumber(val)}
+                        </Text>
+                    ))}
+                </View>
+
+                {/* X-axis labels */}
+                <View style={styles.xAxisLabels}>
+                    {getXAxisLabels().map((label, idx) => (
+                        <Text key={idx} style={styles.xAxisLabel}>
+                            {label}
+                        </Text>
+                    ))}
+                </View>
+            </View>
+        </View>
+    );
+};
+
 // ---------------------- MINI GRAPH ---------------------- //
 const MiniGraph = ({ data }) => {
     const graphWidth = 50;
@@ -171,93 +459,18 @@ const MiniGraph = ({ data }) => {
     );
 };
 
-// ---------------------- TOP BOOKS ITEM ---------------------- //
-const TopBookItem = ({ book, index }) => {
-    const trendData = [10, 20, 15, 25, 20, 30, 25];
-    
-    if (!book) return null;
-    
-    // Use default icon if bookCover is not available
-    const bookCoverSource = require('../assets/icon.png');
-    
-    return (
-        <View style={styles.topBookItem}>
-            <Filigree4 customBottomPosition={-5} customLeftPosition={-25} customOpacity={0.05} />
-            
-            <LinearGradient
-                colors={[colors.black, 'transparent']}
-                style={[globalStyles.shadow, { opacity: 0.2, borderRadius: 8 }]}
-            />
-
-            <Image
-                source={bookCoverSource}
-                style={styles.bookThumbnail}
-                resizeMode="cover"
-            />
-
-            <View style={styles.bookInfo}>
-                <Text style={styles.bookTitle} numberOfLines={1} ellipsizeMode="tail">
-                    {book?.title || "Untitled"}
-                </Text>
-                <Text style={styles.bookAuthor}>{book?.author || "Unknown"}</Text>
-                <Text style={styles.bookViews}>
-                    {formatCompactNumber(book?.totalView || book?.readCount || 0)} Views
-                </Text>
-            </View>
-
-            <MiniGraph data={trendData} />
-        </View>
-    );
-};
-
-// ---------------------- TOP BOOKS SECTION ---------------------- //
-const TopBooksSection = () => {
-    const [tab, setTab] = useState("Week");
-    const { booksDatabase } = useSelector((state) => state.books);
-    const bookDatabase = booksDatabase || [];
-    
-    // Sort by views and take top 10
-    const safeBookDatabase = Array.isArray(bookDatabase) ? bookDatabase : [];
-    const topBooks = [...safeBookDatabase]
-        .filter(book => book != null)
-        .sort((a, b) => ((b?.totalView || b?.readCount || 0) - (a?.totalView || a?.readCount || 0)))
-        .slice(0, 10);
-
-    return (
-        <View style={styles.sectionContainer}>
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>TOP BOOKS</Text>
-                <View style={styles.tabRow}>
-                    {["Week", "Month", "Year"].map(t => (
-                        <TouchableOpacity key={t} onPress={() => setTab(t)}>
-                            <Text style={[styles.tabText, tab === t && styles.tabActive]}>
-                                {t}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
-
-            <View style={styles.listContainer}>
-                <FlatList
-                    data={topBooks}
-                    keyExtractor={(item, index) => item?.id?.toString() || item?.bookId || item?.title || `book-${index}`}
-                    renderItem={({ item, index }) => {
-                        if (!item) return null;
-                        return <TopBookItem book={item} index={index} />;
-                    }}
-                    scrollEnabled={false}
-                />
-            </View>
-        </View>
-    );
-};
-
 // ---------------------- TOP USER ITEM ---------------------- //
 const TopUserItem = ({ user, index }) => {
-    const trendData = [5, 15, 10, 20, 15, 25, 20];
-    
     if (!user) return null;
+    
+    // Get user display name (username, fullName, or name)
+    const displayName = user?.username || user?.fullName || user?.name || `User ${index + 1}`;
+    const firstLetter = displayName.charAt(0).toUpperCase();
+    
+    // Calculate book count from libraryBookIdList
+    const bookCount = Array.isArray(user?.libraryBookIdList) 
+        ? user.libraryBookIdList.length 
+        : (user?.bookCount || 0);
     
     return (
         <View style={styles.topUserItem}>
@@ -270,18 +483,16 @@ const TopUserItem = ({ user, index }) => {
 
             <View style={styles.userAvatar}>
                 <Text style={styles.userAvatarText}>
-                    {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    {firstLetter}
                 </Text>
             </View>
 
             <View style={styles.userInfo}>
-                <Text style={styles.userName}>{user?.name || `User ${index + 1}`}</Text>
+                <Text style={styles.userName}>{displayName}</Text>
                 <Text style={styles.userActivity}>
-                    {user?.bookCount || 120} Books
+                    {bookCount} Books
                 </Text>
             </View>
-
-            <MiniGraph data={trendData} />
         </View>
     );
 };
@@ -289,15 +500,24 @@ const TopUserItem = ({ user, index }) => {
 // ---------------------- TOP USERS SECTION ---------------------- //
 const TopUsersSection = () => {
     const [tab, setTab] = useState("Week");
+    const { usersDatabase } = useSelector((state) => state.books);
+    const safeUsersDatabase = Array.isArray(usersDatabase) ? usersDatabase : [];
     
-    // Sample user data (since we don't have users in Redux)
-    const sampleUsers = [
-        { name: "John Doe", bookCount: 120 },
-        { name: "Jane Smith", bookCount: 95 },
-        { name: "Bob Johnson", bookCount: 87 },
-        { name: "Alice Brown", bookCount: 76 },
-        { name: "Charlie Wilson", bookCount: 65 },
-    ];
+    // Calculate book count for each user and sort by book count
+    const topUsers = [...safeUsersDatabase]
+        .map(user => {
+            if (!user) return null;
+            const bookCount = Array.isArray(user?.libraryBookIdList) 
+                ? user.libraryBookIdList.length 
+                : (user?.bookCount || 0);
+            return {
+                ...user,
+                bookCount: bookCount
+            };
+        })
+        .filter(user => user != null)
+        .sort((a, b) => (b?.bookCount || 0) - (a?.bookCount || 0))
+        .slice(0, 10); // Top 10 users
 
     return (
         <View style={styles.sectionContainer}>
@@ -315,15 +535,21 @@ const TopUsersSection = () => {
             </View>
 
             <View style={styles.listContainer}>
-                <FlatList
-                    data={sampleUsers}
-                    keyExtractor={(item, index) => item?.name || `user-${index}`}
-                    renderItem={({ item, index }) => {
-                        if (!item) return null;
-                        return <TopUserItem user={item} index={index} />;
-                    }}
-                    scrollEnabled={false}
-                />
+                {topUsers.length > 0 ? (
+                    <FlatList
+                        data={topUsers}
+                        keyExtractor={(item, index) => item?.id || item?.username || item?.name || `user-${index}`}
+                        renderItem={({ item, index }) => {
+                            if (!item) return null;
+                            return <TopUserItem user={item} index={index} />;
+                        }}
+                        scrollEnabled={false}
+                    />
+                ) : (
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>Chưa có dữ liệu users</Text>
+                    </View>
+                )}
             </View>
         </View>
     );
@@ -391,6 +617,20 @@ const AdminFooter = ({ currentScreen }) => {
 
 // ---------------------- MAIN SCREEN ---------------------- //
 const AdminAnalysisScreen = () => {
+    const dispatch = useDispatch();
+    const { usersDatabase } = useSelector((state) => state.books);
+    const safeUsersDatabase = Array.isArray(usersDatabase) ? usersDatabase : [];
+    
+    // Tab state for UsersGraph
+    const [usersTab, setUsersTab] = useState("Week");
+    
+    // Fetch users from Firebase when screen is focused to get latest data
+    useFocusEffect(
+        useCallback(() => {
+            dispatch(fetchUsers());
+        }, [dispatch])
+    );
+    
     return (
         <View style={styles.container}>
             <AppHeader />
@@ -398,14 +638,13 @@ const AdminAnalysisScreen = () => {
             <ScrollView bounces={false} overScrollMode="never">
                 <ScreenTitle title="ANALYTICS" icon="person" />
 
-                {/* Overall Views Graph */}
+                {/* Users Graph */}
                 <View style={styles.sectionWrapper}>
-                    <OverallViewsGraph />
-                </View>
-
-                {/* Top Books Section */}
-                <View style={styles.sectionWrapper}>
-                    <TopBooksSection />
+                    <UsersGraph 
+                        usersDatabase={safeUsersDatabase}
+                        tab={usersTab}
+                        onTabChange={setUsersTab}
+                    />
                 </View>
 
                 {/* Top Users Section */}
@@ -511,44 +750,6 @@ const styles = StyleSheet.create({
         width: '100%',
     },
 
-    // Top Book Item
-    topBookItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.gray,
-        borderRadius: 8,
-        padding: 12,
-        marginVertical: 6,
-        borderWidth: 1,
-        borderColor: '#333',
-        overflow: 'hidden',
-    },
-    bookThumbnail: {
-        width: 50,
-        height: 70,
-        borderRadius: 4,
-        backgroundColor: '#fff',
-    },
-    bookInfo: {
-        flex: 1,
-        marginLeft: 12,
-    },
-    bookTitle: {
-        color: colors.gold,
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginBottom: 4,
-    },
-    bookAuthor: {
-        color: colors.white,
-        fontSize: 12,
-        marginBottom: 4,
-    },
-    bookViews: {
-        color: '#bbb',
-        fontSize: 11,
-    },
-
     // Top User Item
     topUserItem: {
         flexDirection: 'row',
@@ -587,6 +788,15 @@ const styles = StyleSheet.create({
     userActivity: {
         color: '#bbb',
         fontSize: 11,
+    },
+    emptyContainer: {
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyText: {
+        color: '#999',
+        fontSize: 14,
     },
 
     // Footer

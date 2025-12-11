@@ -199,7 +199,7 @@ const AdminEditBook = () => {
 
                     <View style={styles.coverWrapper}>
                         <Image 
-                            source={require('../assets/icon.png')} 
+                            source={book?.cover ? { uri: book.cover } : require('../assets/icon.png')} 
                             style={styles.cover} 
                             resizeMode="cover"
                         />
