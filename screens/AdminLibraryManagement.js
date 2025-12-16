@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchGenre } from '../store/slices/bookSlice';
+import { fetchGenre, fetchBooks, fetchAllChapters } from '../store/slices/bookSlice';
 
 import { colors, globalStyles } from '../components/GlobalStyle';
 import AppHeader from '../components/AppHeader';
@@ -76,18 +76,24 @@ const GenreDropdown = ({ selectedGenre, onSelectGenre, genreList }) => {
 };
 
 // ---------------------- BOOK ITEM ---------------------- //
-const AdminBookItem = ({ book }) => {
+const AdminBookItem = ({ book, chapterCounts }) => {
     const navigation = useNavigation();
 
     if (!book) return null;
 
-    // Use default icon if bookCover is not available
-    const bookCoverSource = require('../assets/icon.png');
+    // Get chapter count for this book
+    const bookId = book?.bookId || book?.id;
+    const chapterCount = chapterCounts[bookId] || book?.totalChapter || book?.totalPage || 0;
+
+    // Use book cover from database, fallback to default icon
+    const bookCoverSource = book?.cover 
+        ? { uri: book.cover } 
+        : require('../assets/icon.png');
 
     return (
         <TouchableOpacity 
             style={styles.bookItem} 
-            onPress={() => navigation.navigate('AdminEditBook', { bookId: book?.bookId || book?.id })}
+            onPress={() => navigation.navigate('AdminEditBook', { bookId })}
         >
             <Filigree4 customBottomPosition={-10} customLeftPosition={-25} customOpacity={0.06} />
 
@@ -122,7 +128,7 @@ const AdminBookItem = ({ book }) => {
                 <View style={styles.statsRow}>
                     <View style={styles.statsBlock}>
                         <Text style={styles.statsNum}>
-                            {formatCompactNumber(book?.totalChapter || book?.totalPage || 0)}
+                            {formatCompactNumber(chapterCount)}
                         </Text>
                         <Text style={styles.statsLabel}>Chương</Text>
                     </View>
@@ -207,17 +213,36 @@ const AdminFooter = ({ currentScreen }) => {
 // ---------------------- MAIN SCREEN ---------------------- //
 const AdminLibraryManagement = () => {
     const dispatch = useDispatch();
-    const { booksDatabase, genreDatabase, loading } = useSelector(state => state.books);
+    const { booksDatabase, genreDatabase, chapterDatabase, loading } = useSelector(state => state.books);
     const bookDatabase = booksDatabase || [];
+    const safeChapterDatabase = Array.isArray(chapterDatabase) ? chapterDatabase : [];
     const [selectedGenre, setSelectedGenre] = useState(null);
 
     useEffect(() => {
+        // Fetch books from Firebase if database is empty
+        if (!booksDatabase || booksDatabase.length === 0) {
+            dispatch(fetchBooks());
+        }
+        // Fetch genres from Firebase if database is empty
         if (!genreDatabase || genreDatabase.length === 0) {
             dispatch(fetchGenre());
         }
-    }, [dispatch]);
+        // Fetch all chapters from Firebase if database is empty
+        if (!chapterDatabase || chapterDatabase.length === 0) {
+            dispatch(fetchAllChapters());
+        }
+    }, [dispatch, booksDatabase, genreDatabase, chapterDatabase]);
 
     const genreList = genreDatabase || [];
+
+    // Calculate chapter counts for each book
+    const chapterCounts = {};
+    safeChapterDatabase.forEach(chapter => {
+        const bookId = chapter?.bookId || chapter?.id;
+        if (bookId) {
+            chapterCounts[bookId] = (chapterCounts[bookId] || 0) + 1;
+        }
+    });
 
     // Filter books by selected genre
     const filteredBooks = selectedGenre 
@@ -252,7 +277,7 @@ const AdminLibraryManagement = () => {
                         keyExtractor={(item, index) => item?.id?.toString() || item?.bookId || item?.title || `book-${index}`}
                         renderItem={({ item }) => {
                             if (!item) return null;
-                            return <AdminBookItem book={item} />;
+                            return <AdminBookItem book={item} chapterCounts={chapterCounts} />;
                         }}
                         scrollEnabled={false}
                     />

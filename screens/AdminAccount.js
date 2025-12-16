@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -17,12 +17,19 @@ const AdminAccount = () => {
     const dispatch = useDispatch();
     const navigation = useNavigation();
 
+    // Navigate to Login when user is null (after logout)
+    useEffect(() => {
+        if (!user) {
+            navigation.replace('Login');
+        }
+    }, [user, navigation]);
+
     // Early return if user is null (after logout)
     if (!user) {
         return null;
     }
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         Alert.alert(
             "Đăng xuất",
             "Bạn có chắc chắn muốn đăng xuất?",
@@ -34,9 +41,15 @@ const AdminAccount = () => {
                 {
                     text: "Đăng xuất",
                     style: "destructive",
-                    onPress: () => {
-                        dispatch(logoutUser());
-                        navigation.replace('Login');
+                    onPress: async () => {
+                        try {
+                            await dispatch(logoutUser()).unwrap();
+                            navigation.replace('Login');
+                        } catch (error) {
+                            console.error("Logout error:", error);
+                            // Still navigate to Login even if there's an error
+                            navigation.replace('Login');
+                        }
                     }
                 }
             ]
