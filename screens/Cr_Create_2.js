@@ -140,7 +140,7 @@ const LanguagePickerComponent = ({ pickedLanguage, language, setLanguage, setOpe
 const Cr_Create_2 = () => {
     const dispatch = useDispatch();
 
-    const username = useSelector((state) => state.account.user.username);
+    const username = useSelector((state) => state.account.user?.username || "");
 
     const [authorIsAccount, setAuthorIsAccount] = useState(true);
     const [author, setAuthor] = useState(username);

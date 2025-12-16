@@ -25,6 +25,11 @@ import LibraryListing from './screens/LibraryListing';
 import Login from './screens/Login';
 import GenreListing from './screens/GenreListing';
 import TEMP_Login from './screens/TEMP_Login';
+import AdminAccount from './screens/AdminAccount';
+import AdminHome from './screens/AdminHome';
+import AdminAnalysis from './screens/AdminAnalysis';
+import AdminLibraryManagement from './screens/AdminLibraryManagement';
+import AdminEditBook from './screens/AdminEditBook';
 import SearchResultListing from './screens/SearchResultsListing'
 
 import { Provider } from 'react-redux';
@@ -61,8 +66,6 @@ export default function App() {
           <Stack.Screen name="LibraryListing" component={LibraryListing} />
           <Stack.Screen name="GenreListing" component={GenreListing} />
           
-          <Stack.Screen name="SearchResultListing" component={SearchResultListing} />
-          {/* <Stack.Screen name="Login" component={Login} /> */}
           
           <Stack.Screen name="TEMP_Login" component={TEMP_Login} />
         </Stack.Navigator>
