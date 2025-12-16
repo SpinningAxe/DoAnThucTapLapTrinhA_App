@@ -208,19 +208,54 @@ export const loadUserFromStorage = createAsyncThunk(
 // 🔹 Cập nhật thông tin user (VD: avatar, username)
 export const updateUserInfo = createAsyncThunk(
   "account/updateUserInfo",
-  async (updatedData, { rejectWithValue }) => {
+  async (updatedData, { rejectWithValue, getState }) => {
     try {
-      const storedUser = await AsyncStorage.getItem(STORAGE_KEY);
-      if (!storedUser) return rejectWithValue("Không tìm thấy người dùng!");
+      const state = getState();
+      const currentUser = state.account.user;
+      
+      if (!currentUser) {
+        return rejectWithValue("Không tìm thấy người dùng!");
+      }
 
-      const user = JSON.parse(storedUser);
-      const newUser = { ...user, ...updatedData };
+      // Lấy token từ AsyncStorage để gọi API
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      
+      // Gọi API backend để cập nhật thông tin
+      try {
+        const res = await fetch(`${ACCOUNTS_API}/update`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify(updatedData),
+        });
 
+        const data = await res.json();
+        
+        if (!res.ok) {
+          // Nếu API không tồn tại hoặc lỗi, vẫn cập nhật local
+          console.log("API update failed, updating local only:", data?.error || "API not available");
+        } else {
+          // API thành công, sử dụng data từ API
+          const newUser = { ...currentUser, ...data.user || updatedData };
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+          Alert.alert("Thành công", "Cập nhật thông tin thành công!");
+          return newUser;
+        }
+      } catch (apiError) {
+        // Nếu API không khả dụng, chỉ cập nhật local
+        console.log("API not available, updating local only:", apiError.message);
+      }
+
+      // Cập nhật local storage và Redux state
+      const newUser = { ...currentUser, ...updatedData };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
       Alert.alert("Thành công", "Cập nhật thông tin thành công!");
       return newUser;
     } catch (error) {
-      return rejectWithValue(error.message);
+      console.error("Update user info error:", error);
+      return rejectWithValue(error.message || "Không thể cập nhật thông tin!");
     }
   }
 );
@@ -1169,6 +1204,22 @@ const accountSlice = createSlice({
         state.error = null;
       })
       .addCase(logoutUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔹 Update User Info
+      .addCase(updateUserInfo.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUserInfo.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload; // Cập nhật user trong Redux state
+        state.username = action.payload?.username || state.username;
+        state.error = null;
+      })
+      .addCase(updateUserInfo.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

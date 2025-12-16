@@ -5,6 +5,8 @@ import { db } from "../../firebase";
 const initialState = {
   booksDatabase: [],
   genreDatabase: [],
+  chapterDatabase: [],
+  usersDatabase: [],
 
   selectedBook: null,
   chaptersOfSelectedBook: [],
@@ -36,7 +38,7 @@ export const fetchBooks = createAsyncThunk("books/fetchBooks", async () => {
     }
     return { id: doc.id, ...data };
   });
-  console.log("fetchBooks success");
+  console.log(`fetchBooks success: Tổng số sách trong database = ${books.length}`);
   return books;
 });
 
@@ -176,6 +178,56 @@ export const fetchGenre = createAsyncThunk("books/fetchGenre", async () => {
   return genre;
 });
 
+export const fetchAllChapters = createAsyncThunk("books/fetchAllChapters", async () => {
+  const snapshot = await getDocs(collection(db, "Chapters"));
+  const chapters = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    if (data.lastUpdateDate?.toDate) {
+      const d = data.lastUpdateDate.toDate();
+      data.lastUpdateDate = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+    }
+    if (data.createdDate?.toDate) {
+      const d = data.createdDate.toDate();
+      data.createdDate = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+    }
+    return { id: doc.id, ...data };
+  });
+  console.log("fetchAllChapters success:", chapters.length);
+  return chapters;
+});
+
+export const fetchUsers = createAsyncThunk("books/fetchUsers", async (_, { rejectWithValue }) => {
+  try {
+    const snapshot = await getDocs(collection(db, "Users"));
+    const users = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      // Convert Timestamp to string format "DD/MM/YYYY" for createdAt, createdDate, registrationDate
+      if (data.createdAt?.toDate) {
+        const d = data.createdAt.toDate();
+        data.createdAt = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+      }
+      if (data.createdDate?.toDate) {
+        const d = data.createdDate.toDate();
+        data.createdDate = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+      }
+      if (data.registrationDate?.toDate) {
+        const d = data.registrationDate.toDate();
+        data.registrationDate = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+      }
+      if (data.created_at?.toDate) {
+        const d = data.created_at.toDate();
+        data.created_at = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+      }
+      return { id: doc.id, ...data };
+    });
+    console.log(`fetchUsers success: Tổng số users trong database = ${users.length}`);
+    return users;
+  } catch (error) {
+    console.error("fetchUsers failed:", error);
+    return rejectWithValue(error.message);
+  }
+});
+
 const booksSlice = createSlice({
   name: "books",
   initialState: initialState,
@@ -279,6 +331,30 @@ const booksSlice = createSlice({
       .addCase(fetchGenre.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch genre';
+      })
+      .addCase(fetchAllChapters.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllChapters.fulfilled, (state, action) => {
+        state.loading = false;
+        state.chapterDatabase = action.payload;
+      })
+      .addCase(fetchAllChapters.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch chapters';
+      })
+      .addCase(fetchUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.usersDatabase = action.payload;
+      })
+      .addCase(fetchUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch users';
       });
   }
 });
