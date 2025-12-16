@@ -70,7 +70,7 @@ const AppFooter = ({ currentScreen }) => {
                             navigation.navigate("Account")
                         }
                         else {
-                            navigation.navigate("TEMP_Login")
+                            navigation.navigate("Login")
                         }
                     }}
                 >

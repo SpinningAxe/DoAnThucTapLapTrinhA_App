@@ -42,7 +42,7 @@ const ResultButton = ({ page, setPage, totalPage }) => {
             {/* <View style={styles.line} /> */}
             <Filigree1 customPosition={-95} />
 
-            <View style={[styles.row, { justifyContent: 'center' }]}>
+            <View style={[styles.row, { flexDirection: 'row', justifyContent: 'center' }]}>
                 <TouchableOpacity style={styles.rb_button}
                     onPress={() => movePage(-1)}
                 >
@@ -332,6 +332,7 @@ const styles = StyleSheet.create({
     // RESULTS DISPLAY
 
     rd_container: {
+        width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
 

@@ -211,23 +211,30 @@ const BookItem = ({ navigation, book }) => {
 }
 
 const BookListing = ({ navigation }) => {
-    const { searchResults, booksForBookListing, bookListingTitle, loading, error } = useSelector((state) => state.books);
+    const { booksForBookListing, bookListingTitle, loading, error } = useSelector((state) => state.books);
     const dispatch = useDispatch()
 
-    const [bookList, setBookList] = useState(searchResults)
     useEffect(() => {
-        setBookList(searchResults);
-        if (bookListingTitle != "Tìm kiếm" && bookListingTitle != "Thể loại") {
-            dispatch(fetchBooksForBookListing());
-            setBookList(booksForBookListing);
-        }
-
+        dispatch(fetchBooksForBookListing());
     }, [dispatch]);
 
     const [page, setPage] = useState(1);
-    if (loading) return null;
+    
+    if (loading) return (
+        <View style={styles.container}>
+            <AppHeader />
+            <ScrollView bounces={false} overScrollMode="never" style={{ width: '100%' }}>
+                <View style={{ width: '100%', alignItems: 'center', marginTop: 30, marginBottom: 20 }}>
+                    <Text style={{ color: colors.white, letterSpacing: 2 }}>
+                        Đang tải ...
+                    </Text>
+                </View>
+            </ScrollView>
+            <AppFooter currentScreen={0} />
+        </View >
+    );
 
-    const totalPage = Math.ceil(bookList.length / 10);
+    const totalPage = Math.ceil(booksForBookListing.length / 10);
 
     return (
         <View style={styles.container}>
@@ -235,7 +242,7 @@ const BookListing = ({ navigation }) => {
             <ScrollView style={{ width: '100%' }} bounces={false} overScrollMode="never">
                 <ResultCount
                     title={bookListingTitle}
-                    bookList={bookList}
+                    bookList={booksForBookListing}
                     totalPage={totalPage}
                 />
 
@@ -254,10 +261,10 @@ const BookListing = ({ navigation }) => {
                     />
                 }
 
-                <ResultDisplay page={page} bookList={bookList} />
+                <ResultDisplay page={page} bookList={booksForBookListing} />
 
                 {
-                    (totalPage != 1 && bookList.length > 4) &&
+                    (totalPage != 1 && booksForBookListing.length > 4) &&
                     <ResultButton page={page}
                         setPage={setPage}
                         totalPage={totalPage}

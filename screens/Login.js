@@ -27,15 +27,15 @@ import { useNavigation } from "@react-navigation/native";
 
 // ✅ Redux
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser, registerUser } from "../store/slices/accountSlice";
+import { loginUser, registerUser,loginGoogle } from "../store/slices/accountSlice";
 
-// ✅ Firebase Auth setup
+
+
+// GOOGLE LOGIN (Firebase + Expo)
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
-
-// FILE FIREBASE Ở ../firebase
-import { auth } from "../config/firebaseConfig";
+import { auth } from "../firebase";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -46,17 +46,16 @@ const LoginComponent = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.account);
 
-  // ✅ Google Auth config (Expo Go + iOS + Web)
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId:
-      "971300749369-h3enance2u774vr7r29engo9vjdab5n1.apps.googleusercontent.com",
-    androidClientId:
-      "971300749369-mp0c86ukj18eei2nt2fbvo4u29ev97f.apps.googleusercontent.com",
-    webClientId:
-      "971300749369-mp0c86ukj18eei2nt2fbvo4u29ev97f.apps.googleusercontent.com",
-    expoClientId:
-      "971300749369-mp0c86ukj18eei2nt2fbvo4u29ev97f.apps.googleusercontent.com",
-  });
+
+  // GOOGLE AUTH REQUEST
+const [request, response, promptAsync] = Google.useAuthRequest({
+  expoClientId: "971300749369-78h225gp5umn2cf5p25ja9ir29otm05s.apps.googleusercontent.com",
+  webClientId:  "971300749369-78h225gp5umn2cf5p25ja9ir29otm05s.apps.googleusercontent.com",
+  iosClientId: "971300749369-l4nqiatjkrqg7r0kco4n1dtfo4vs7u42.apps.googleusercontent.com",
+  androidClientId: "971300749369-78h225gp5umn2cf5p25ja9ir29otm05s.apps.googleusercontent.com",
+});
+
+
 
   // ✅ Đăng nhập email/password (backend)
   const handleAuth = () => {
@@ -79,35 +78,42 @@ const LoginComponent = () => {
     if (user) navigation.replace("BookHome");
   }, [user]);
 
-  // ✅ Firebase Google Sign-In logic
-  useEffect(() => {
-    const signInWithGoogle = async () => {
-      if (response?.type === "success") {
-        try {
-          const { authentication } = response;
+    // ---------- GOOGLE LOGIN ----------
+  // useEffect(() => {
+  //   const doGoogleLogin = async () => {
+  //     if (response?.type === "success") {
+  //       try {
+  //         const { authentication } = response;
 
-          // Tạo credential từ token Google
-          const credential = GoogleAuthProvider.credential(
-            authentication.idToken,
-            authentication.accessToken
-          );
+  //         // Firebase login
+  //         const credential = GoogleAuthProvider.credential(
+  //           authentication.idToken,
+  //           authentication.accessToken
+  //         );
+  //         const userCredential = await signInWithCredential(auth, credential);
 
-          // Đăng nhập Firebase
-          const userCredential = await signInWithCredential(auth, credential);
-          const user = userCredential.user;
+  //         const gUser = userCredential.user; // Firebase User
 
-          console.log("✅ Firebase user:", user);
-          Alert.alert("Thành công", `Xin chào ${user.displayName || user.email}!`);
-          navigation.replace("BookHome");
-        } catch (error) {
-          console.log("❌ Lỗi Firebase Auth:", error);
-          Alert.alert("Lỗi", "Không thể đăng nhập Google!");
-        }
-      }
-    };
+  //         // Gửi user Google lên BE để tạo/lưu + nhận JWT
+  //         dispatch(
+  //           loginGoogle({
+  //             uid: gUser.uid,
+  //             email: gUser.email,
+  //             name: gUser.displayName,
+  //             photoURL: gUser.photoURL,
+  //             onSuccess: () => navigation.replace("BookHome"),
+  //           })
+  //         );
+  //       } catch (err) {
+  //         Alert.alert("Lỗi", "Không thể đăng nhập Google!");
+  //         console.log("Google Login Error:", err);
+  //       }
+  //     }
+  //   };
 
-    signInWithGoogle();
-  }, [response]);
+  //   doGoogleLogin();
+  // }, [response]);
+
 
   return (
     <View>
@@ -263,7 +269,7 @@ const SignUpComponent = ({ setIsLogin }) => {
               email === "" && { color: colors.gray },
             ]}
           >
-            Email
+            Email hoặc tên đăng nhập
           </Text>
           <TextInput
             style={styles.ot_textInput}

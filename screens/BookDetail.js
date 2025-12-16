@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, FlatList } from 'react-native';
+import React, { useState, useRef, useEffect, use } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 
 import { colors, globalStyles, bookCover } from '../components/GlobalStyle';
 
-import { Filigree1, Filigree3_Simple, Filigree5_Bottom } from '../components/decorations/Filigree';
+import { Filigree1, Filigree2, Filigree3_Simple, Filigree5_Bottom } from '../components/decorations/Filigree';
 import { DecoButton, DecoButton_Dark } from '../components/decorations/DecoButton';
 
 import AppHeader from '../components/AppHeader';
@@ -16,6 +16,7 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchChaptersOfSelectedBook, setSelectedChapter } from "../store/slices/bookSlice";
 import { addBookToLibrary, removeBookFromLibrary, setCurrentBookId, setCurrentChapterNum, updateCurrentBookAndChapter } from "../store/slices/accountSlice";
+import { createReview, fetchReviewsByBookId, fetchUserReviewForBook, updateReview } from '../store/slices/reviewSlice';
 
 const BookInfo = ({ selectedBook }) => {
     const navigation = useNavigation();
@@ -270,11 +271,6 @@ const MoreDetails = ({ selectedBook, chaptersOfSelectedBook, loading }) => {
                                 <Text style={[styles.md_buttonText, option == 2 && styles.md_buttonText_Active]}>D.s Chương</Text>
                             </TouchableOpacity>
                         }
-                        {/* <TouchableOpacity style={[styles.md_button, option == 3 && styles.md_button_Active]}
-                    onPress={() => setOption(3)}
-                >
-                    <Text style={[styles.md_buttonText, option == 3 && styles.md_buttonText_Active]}>Tương Tự</Text>
-                </TouchableOpacity> */}
                     </View>
             }
 
@@ -388,44 +384,592 @@ const MoreDetailsOption2 = () => {
         </View>
     )
 }
-// const MoreDetailsOption3 = ({ selectedBook }) => {
-//     const bookDatabase = useSelector((state) => state.books.bookDatabase)
-//     return (
-//         <View>
-//             <BookList_Detail key={selectedBook.author + Date.now.toString()}
-//                 searchType="Tác Giả"
-//                 searchKeyword={selectedBook.author}
-//                 listOfBooks={bookDatabase.filter(
-//                     book => book.series === selectedBook.series
-//                 ).slice(0, 10)}
-//             />
-//             {
-//                 selectedBook.series != "" &&
-//                 <BookList_Detail key={selectedBook.series + Date.now.toString()}
-//                     searchType="Series"
-//                     searchKeyword={selectedBook.series}
-//                     listOfBooks={bookDatabase.filter(
-//                         book => book.author === selectedBook.author
-//                     ).slice(0, 10)}
-//                 />
-//             }
-//             {
-//                 selectedBook.genreList.slice(0, 3).map((genre) => (
-//                     <BookList_Detail key={genre + Date.now.toString()}
-//                         searchType="Thể Loại"
-//                         searchKeyword={genre}
-//                         listOfBooks={
-//                             bookDatabase.filter(
-//                                 book => book.genreList.includes(genre)
-//                             ).slice(0, 10)
-//                         }
-//                     />
-//                 ))
-//             }
-//             {/* <Filigree1 /> */}
-//         </View>
-//     )
-// }
+const ReviewCard = ({ reviewObj }) => {
+    return (
+        <View style={{ width: '90%', height: 'auto', backgroundColor: colors.gray, flex: 1, marginTop: 15 }}>
+            <LinearGradient
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                colors={['transparent', colors.black]}
+                style={[globalStyles.shadow, globalStyles.rightShadow, { width: '60%' }]}
+            />
+            <View style={{
+                flex: 1, borderColor: colors.black, borderBottomWidth: 2,
+                alignItems: 'center', justifyContent: 'space-between', flexDirection: 'row',
+                paddingHorizontal: 20, paddingVertical: 10
+            }}>
+                <View style={{ alignItems: 'center', justifyContent: 'flex-start', flexDirection: 'row' }}>
+                    <View style={{ overflow: 'hidden', width: 40, height: 40, borderRadius: 20, borderColor: colors.white, borderWidth: 2, backgroundColor: colors.lightgray }}>
+                        <Image source={{ uri: reviewObj.reviewAvatar }}
+                            style={{ width: '100%', height: "100%", }}
+                        />
+                    </View>
+                    <View>
+                        <Text style={{ color: colors.white, fontSize: 15, marginLeft: 10, fontWeight: 'bold' }}>
+                            {reviewObj.reviewer}
+                        </Text>
+                        <Text style={{ color: colors.lightgray, fontSize: 13, marginLeft: 10 }}>
+                            ĐĂNG NGÀY: {reviewObj.reviewDate}
+                        </Text>
+                    </View>
+                </View>
+                {
+                    reviewObj.type == "positive" ?
+                        < View style={{
+                            width: 50, height: 50, borderRadius: 4, overflow: 'hidden',
+                            alignItems: 'center', justifyContent: 'center',
+                            backgroundColor: colors.green,
+                        }}>
+                            <LinearGradient
+                                colors={['transparent', colors.gray]}
+                                style={[globalStyles.shadow, globalStyles.bottomShadow, { bottom: 0, height: 25, opacity: 0.3 }]}
+                            />
+                            <MaterialIcons name="thumb-up"
+                                color={colors.trueWhite}
+                                size={34}
+                            />
+                        </View>
+                        :
+                        <View style={{
+                            width: 50, height: 50, borderRadius: 4, overflow: 'hidden',
+                            alignItems: 'center', justifyContent: 'center',
+                            backgroundColor: colors.red,
+                        }}>
+                            <LinearGradient
+                                colors={['transparent', colors.gray]}
+                                style={[globalStyles.shadow, globalStyles.bottomShadow, { bottom: 0, height: 25, opacity: 0.3 }]}
+                            />
+                            <MaterialIcons name="thumb-down"
+                                color={colors.trueWhite}
+                                size={34}
+                            />
+                        </View>
+                }
+            </View>
+            {
+                reviewObj.reviewText != null &&
+                <View style={{ flex: 3, paddingHorizontal: 25, paddingVertical: 15, paddingBottom: 20 }}>
+                    <Text style={{ color: colors.white, borderBottomWidth: 1, borderColor: colors.lightgray, paddingBottom: 10 }}>
+                        {reviewObj.reviewText}
+                    </Text>
+                </View>
+            }
+
+        </View>
+    )
+}
+
+const analyzeReviews = (reviews) => {
+    const positiveReviews = reviews.filter(review =>
+        review.type && review.type.toLowerCase() === "positive"
+    );
+
+    const negativeReviews = reviews.filter(review =>
+        review.type && review.type.toLowerCase() === "negative"
+    );
+
+    const positiveCount = positiveReviews.length;
+    const negativeCount = negativeReviews.length;
+
+    const totalCount = positiveCount + negativeCount;
+
+    const positivePercentage = totalCount > 0 ? (positiveCount / totalCount) * 100 : 0;
+    const negativePercentage = totalCount > 0 ? (negativeCount / totalCount) * 100 : 0;
+
+    let verdict = "CHƯA CÓ ĐÁNH GIÁ";
+    let textColor = "lightGray";
+
+    if (totalCount > 0) {
+        if (positivePercentage >= 90) {
+            verdict = "CỰC KỲ TÍCH CỰC";
+            textColor = "green";
+        } else if (positivePercentage >= 75) {
+            verdict = "RẤT TÍCH CỰC";
+            textColor = "green";
+        } else if (positivePercentage >= 60) {
+            verdict = "KHÁ TÍCH CỰC";
+            textColor = "green";
+        } else if (positivePercentage >= 40 && positivePercentage <= 60) {
+            verdict = "LẪN LỘN";
+            textColor = "yellow";
+        } else if (positivePercentage >= 25) {
+            verdict = "KHÁ TIÊU CỰC";
+            textColor = "red";
+        } else if (positivePercentage >= 10) {
+            verdict = "RẤT TIÊU CỰC";
+            textColor = "red";
+        } else {
+            verdict = "CỰC KỲ TIÊU CỰC";
+            textColor = "red";
+        }
+    }
+
+    return {
+        positiveReviews,
+        negativeReviews,
+        positiveCount,
+        negativeCount,
+        totalCount,
+        positivePercentage: Math.round(positivePercentage),
+        negativePercentage: Math.round(negativePercentage),
+        verdict,
+        textColor
+    };
+};
+
+const ReviewOptions = ({ reviewOption, reviewArray, analysis }) => {
+    if (reviewArray.length == 0) return null;
+
+    if (reviewOption == 0) return (
+        <View style={{ marginTop: 50, justifyContent: 'flex-start', alignItems: 'center' }}>
+            <View style={{ width: '100%', paddingBottom: 10, borderBottomWidth: 1, borderColor: colors.lightgray, paddingHorizontal: 20 }}>
+                <LinearGradient
+                    colors={['transparent', colors.black]}
+                    style={[globalStyles.shadow, globalStyles.bottomShadow, { height: 80, opacity: 1 }]}
+                />
+                <Text style={{ color: colors.white, fontSize: 18, fontWeight: 'bold' }}>{reviewArray.length} Đánh giá</Text>
+            </View>
+            {
+                reviewArray.map((review, index) => (
+                    <ReviewCard reviewObj={review} key={index} />
+                ))
+            }
+            <Filigree1 />
+        </View>
+    )
+    else if (reviewOption == 1) return (
+        <View style={{ marginTop: 50, justifyContent: 'flex-start', alignItems: 'center' }}>
+            <View style={{ width: '100%', paddingBottom: 10, borderBottomWidth: 1, borderColor: colors.lightgray, paddingHorizontal: 20 }}>
+                <LinearGradient
+                    colors={['transparent', colors.black]}
+                    style={[globalStyles.shadow, globalStyles.bottomShadow, { height: 80, opacity: 1 }]}
+                />
+                <Text style={{ color: colors.white, fontSize: 18, fontWeight: 'bold' }}>{analysis.positiveCount} Đánh giá tích cực</Text>
+            </View>
+            {
+                analysis.positiveReviews.map((review, index) => (
+                    <ReviewCard reviewObj={review} key={index} />
+                ))
+            }
+            <Filigree1 />
+        </View>
+    )
+    else if (reviewOption == 2) return (
+        <View style={{ marginTop: 50, justifyContent: 'flex-start', alignItems: 'center' }}>
+            <View style={{ width: '100%', paddingBottom: 10, borderBottomWidth: 1, borderColor: colors.lightgray, paddingHorizontal: 20 }}>
+                <LinearGradient
+                    colors={['transparent', colors.black]}
+                    style={[globalStyles.shadow, globalStyles.bottomShadow, { height: 80, opacity: 1 }]}
+                />
+                <Text style={{ color: colors.white, fontSize: 18, fontWeight: 'bold' }}>{analysis.negativeCount} Đánh giá tiêu cực</Text>
+            </View>
+            {
+                analysis.negativeReviews.map((review, index) => (
+                    <ReviewCard reviewObj={review} key={index} />
+                ))
+            }
+            <Filigree1 />
+        </View>
+    )
+}
+
+const ReviewCreateBox = ({ selectedBook }) => {
+    const dispatch = useDispatch();
+    const { isLogin, user } = useSelector((state) => state.account);
+    const [reviewText, setReviewText] = useState(null);
+    const [type, setType] = useState(null);
+    const title = selectedBook.title;
+    const bookId = selectedBook.bookId;
+    const reviewer = user.username || null;
+    const reviewAvatar = user.avatar || null;
+    const reviewerId = user.id || null;
+
+    if (!isLogin) return null;
+
+    return (
+        <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: '95%', marginTop: 20, backgroundColor: colors.gray }}>
+                <View style={{ width: '100%', height: 40, backgroundColor: colors.gold, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 20 }}>
+                    <LinearGradient
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        colors={['transparent', colors.red]}
+                        style={[globalStyles.shadow, globalStyles.rightShadow, { opacity: 0.3, width: '50%' }]}
+                    />
+                    <Text style={{ fontSize: 15, fontWeight: 'bold' }} numberOfLines={1}>Viết đánh giá cho {title}</Text>
+                </View>
+                <View style={{
+                    width: '100%', height: 110, borderBottomWidth: 1, borderColor: colors.black, flexDirection: 'row',
+                    alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 10
+                }}>
+                    <View style={{ overflow: 'hidden', marginRight: 10, width: 60, height: 60, backgroundColor: colors.lightgray, borderRadius: 30, borderColor: colors.white, borderWidth: 3 }}>
+                        <Image source={{ uri: reviewAvatar }} style={{ width: '100%', height: '100%', }} />
+                    </View>
+                    <View style={{ width: '80%', height: '100%', backgroundColor: colors.black, borderRadius: 4, paddingHorizontal: 10 }}>
+                        <TextInput style={{ color: colors.white }}
+                            placeholder='Bắt đầu viết'
+                            placeholderTextColor={colors.lightgray}
+                            onChangeText={(text) => setReviewText(text)}
+                            value={reviewText}
+                            multiline={true}
+                        />
+                    </View>
+                </View>
+                <View style={{ paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center' }}>
+                    <Text style={{ marginRight: 5, color: colors.lightgray, marginVertical: 10 }}>Bạn có khuyến nghị tác phẩm này?</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <TouchableOpacity style={[
+                            {
+                                flexDirection: 'row', width: 90, marginHorizontal: 5, paddingVertical: 5, paddingHorizontal: 20,
+                                backgroundColor: colors.black, borderRadius: 4, justifyContent: 'center', alignItems: 'center'
+                            },
+                            type == "positive" && { backgroundColor: colors.green }
+                        ]}
+                            onPress={() => setType("positive")}
+                        >
+                            <Text style={{ color: colors.trueWhite, fontSize: 14, fontWeight: 'bold', marginRight: 10 }}>
+                                Có
+                            </Text>
+                            <MaterialIcons name="thumb-up"
+                                color={colors.trueWhite}
+                                size={16}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[
+                            {
+                                flexDirection: 'row', width: 90, marginHorizontal: 5, paddingVertical: 5, paddingHorizontal: 20,
+                                backgroundColor: colors.black, borderRadius: 4, justifyContent: 'center', alignItems: 'center'
+                            },
+                            type == "negative" && { backgroundColor: colors.red }
+                        ]}
+                            onPress={() => setType("negative")}
+                        >
+                            <Text style={{ color: colors.trueWhite, fontSize: 14, fontWeight: 'bold', marginRight: 5 }}>
+                                Không
+                            </Text>
+                            <MaterialIcons name="thumb-down"
+                                color={colors.trueWhite}
+                                size={16}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <Filigree2 customPosition={-85} />
+            </View>
+            {
+                type != null ?
+                    <TouchableOpacity style={{ zIndex: 999, marginTop: 15 }}
+                        activeOpacity={0.5}
+                        onPress={() => {
+                            dispatch(createReview({ reviewText, reviewer, reviewAvatar, bookId, type }))
+                        }}
+                    >
+                        <DecoButton ButtonText="ĐĂNG" ButtonIcon="add" />
+                    </TouchableOpacity>
+                    :
+                    <TouchableOpacity style={{ zIndex: 999, marginTop: 15, opacity: 0 }}
+                        disabled
+                    >
+                        <DecoButton ButtonText="ĐĂNG" ButtonIcon="add" />
+                    </TouchableOpacity>
+            }
+
+        </View>
+    )
+}
+
+const ReviewEditBox = ({ userReview, setEditMode }) => {
+    const dispatch = useDispatch();
+
+    const [reviewText, setReviewText] = useState(userReview.reviewText);
+    const [type, setType] = useState(userReview.type);
+    const reviewAvatar = userReview.reviewAvatar || null;
+    const reviewId = userReview.id || null;
+    const bookId = userReview.bookId;
+    
+    return (
+        <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: '95%', marginTop: 20, backgroundColor: colors.gray }}>
+                <View style={{ width: '100%', height: 40, backgroundColor: colors.gold, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 20 }}>
+                    <LinearGradient
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        colors={['transparent', colors.red]}
+                        style={[globalStyles.shadow, globalStyles.rightShadow, { opacity: 0.3, width: '50%' }]}
+                    />
+                    <Text style={{ fontSize: 15, fontWeight: 'bold' }} numberOfLines={1}>
+                        Đánh giá của bạn
+                    </Text>
+                </View>
+                <View style={{
+                    width: '100%', height: 110, borderBottomWidth: 1, borderColor: colors.black, flexDirection: 'row',
+                    alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 10
+                }}>
+                    <View style={{ overflow: 'hidden', marginRight: 10, width: 60, height: 60, backgroundColor: colors.lightgray, borderRadius: 30, borderColor: colors.white, borderWidth: 3 }}>
+                        <Image source={{ uri: reviewAvatar }} style={{ width: '100%', height: '100%', }} />
+                    </View>
+                    <View style={{ width: '80%', height: '100%', backgroundColor: colors.black, borderRadius: 4, paddingHorizontal: 10 }}>
+                        <TextInput style={{ color: colors.white }}
+                            placeholder='Bắt đầu viết'
+                            placeholderTextColor={colors.lightgray}
+                            onChangeText={(text) => setReviewText(text)}
+                            value={reviewText}
+                            multiline={true}
+                        />
+                    </View>
+                </View>
+                <View style={{ paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center' }}>
+                    <Text style={{ marginRight: 5, color: colors.lightgray, marginVertical: 10 }}>Bạn có khuyến nghị tác phẩm này?</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <TouchableOpacity style={[
+                            {
+                                flexDirection: 'row', width: 90, marginHorizontal: 5, paddingVertical: 5, paddingHorizontal: 20,
+                                backgroundColor: colors.black, borderRadius: 4, justifyContent: 'center', alignItems: 'center'
+                            },
+                            type == "positive" && { backgroundColor: colors.green }
+                        ]}
+                            onPress={() => setType("positive")}
+                        >
+                            <Text style={{ color: colors.trueWhite, fontSize: 14, fontWeight: 'bold', marginRight: 10 }}>
+                                Có
+                            </Text>
+                            <MaterialIcons name="thumb-up"
+                                color={colors.trueWhite}
+                                size={16}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[
+                            {
+                                flexDirection: 'row', width: 90, marginHorizontal: 5, paddingVertical: 5, paddingHorizontal: 20,
+                                backgroundColor: colors.black, borderRadius: 4, justifyContent: 'center', alignItems: 'center'
+                            },
+                            type == "negative" && { backgroundColor: colors.red }
+                        ]}
+                            onPress={() => setType("negative")}
+                        >
+                            <Text style={{ color: colors.trueWhite, fontSize: 14, fontWeight: 'bold', marginRight: 5 }}>
+                                Không
+                            </Text>
+                            <MaterialIcons name="thumb-down"
+                                color={colors.trueWhite}
+                                size={16}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <Filigree2 customPosition={-85} />
+            </View>
+            <TouchableOpacity style={{ zIndex: 999, marginTop: 15 }}
+                activeOpacity={0.5}
+                onPress={() => {
+                    dispatch(updateReview({reviewText, type, reviewId, bookId}))
+                    setEditMode(false)
+                }}
+            >
+                <DecoButton ButtonText="LƯU" ButtonIcon="edit" />
+            </TouchableOpacity>
+            <TouchableOpacity style={{ zIndex: 999, marginTop: 10 }}
+                activeOpacity={0.5}
+                onPress={() => {
+                    setType(userReview.type)
+                    setReviewText(userReview.reviewText)
+                    setEditMode(false)
+                }}
+            >
+                <DecoButton_Dark ButtonText="HỦY" ButtonIcon="close" />
+            </TouchableOpacity>
+
+        </View>
+    )
+}
+
+const Reviews = ({ _loading, selectedBook }) => {
+    const dispatch = useDispatch();
+    const { isLogin } = useSelector((state) => state.account);
+    const { reviewArray, userReview, loading, error } = useSelector((state) => state.reviews);
+
+    useEffect(() => {
+        dispatch(fetchReviewsByBookId(selectedBook.bookId))
+        dispatch(fetchUserReviewForBook(selectedBook.bookId))
+    }, [dispatch]);
+
+    const [reviewOption, setReviewOption] = useState(0);
+    const [editMode, setEditMode] = useState(false);
+    const analysis = analyzeReviews(reviewArray);
+
+    if (_loading || loading) {
+        return (
+            <View style={[styles.md_container, { marginTop: 60 }]}>
+                <View style={styles.md_header}>
+                    <Filigree3_Simple customBottomPosition={-20} />
+                </View>
+            </View>
+        )
+    }
+
+    return (
+        <View style={[styles.md_container, { marginTop: 60, backgroundColor: null }]}>
+            <LinearGradient
+                colors={['transparent', colors.black]}
+                style={[globalStyles.shadow, globalStyles.bottomShadow, { top: -40, height: 40, opacity: 1 }]}
+            />
+            <View style={[styles.md_header, { marginBottom: 30, backgroundColor: colors.gray, borderColor: colors.gold, borderBottomWidth: 3 }]}>
+                <Filigree3_Simple customBottomPosition={-24} />
+                <Text style={[styles.md_buttonText, styles.md_buttonText_Active]}>Đánh Giá</Text>
+            </View>
+
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableOpacity
+                    style={{
+                        backgroundColor: colors.gray, borderRadius: 8, overflow: 'hidden',
+                        flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 2,
+                        width: 250, height: 100
+                    }}
+                    onPress={() => setReviewOption(0)}
+                >
+                    <LinearGradient
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        colors={[colors.black, 'transparent']}
+                        style={[globalStyles.shadow, globalStyles.leftShadow, { opacity: 0.8, }]}
+                    />
+                    <LinearGradient
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        colors={['transparent', colors.black]}
+                        style={[globalStyles.shadow, globalStyles.rightShadow, { opacity: 0.8, }]}
+                    />
+                    <Text style={{ color: colors.lightgray, fontSize: 14 }}>ĐÁNH GIÁ TỔNG THỂ:</Text>
+                    <Text style={[{ fontSize: 20, fontWeight: 'bold', marginVertical: 5 },
+                    analysis.textColor == "green" ? { color: colors.green } :
+                        analysis.textColor == "yellow" ? { color: colors.yellow } :
+                            analysis.textColor == "red" ? { color: colors.red } :
+                                { color: colors.lightgray }
+                    ]}>{analysis.verdict}</Text>
+                    <Text style={{ color: colors.lightgray, fontSize: 14 }}>({reviewArray.length} đánh giá)</Text>
+                </TouchableOpacity>
+
+                {
+                    analysis.verdict != "CHƯA CÓ ĐÁNH GIÁ" && analysis.positiveCount != 0 &&
+                    <TouchableOpacity style={{
+                        backgroundColor: colors.gray, borderRadius: 8, overflow: 'hidden',
+                        flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexDirection: 'row',
+                        width: 250, height: 40, marginTop: 5, paddingHorizontal: 25
+                    }}
+                        onPress={() => setReviewOption(1)}
+                    >
+                        <LinearGradient
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            colors={[colors.black, 'transparent']}
+                            style={[globalStyles.shadow, globalStyles.leftShadow, { opacity: 0.8, }]}
+                        />
+                        <LinearGradient
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            colors={['transparent', colors.black]}
+                            style={[globalStyles.shadow, globalStyles.rightShadow, { opacity: 0.8, }]}
+                        />
+                        < View style={{
+                            width: 30, height: 30, borderRadius: 4, overflow: 'hidden',
+                            alignItems: 'center', justifyContent: 'center',
+                            backgroundColor: colors.green,
+                        }}>
+                            <LinearGradient
+                                colors={['transparent', colors.gray]}
+                                style={[globalStyles.shadow, globalStyles.bottomShadow, { bottom: 0, height: 25, opacity: 0.3 }]}
+                            />
+                            <MaterialIcons name="thumb-up"
+                                color={colors.trueWhite}
+                                size={16}
+                            />
+                        </View>
+                        <Text style={{ marginLeft: 10, color: colors.white }}>
+                            {analysis.positiveCount} TÍCH CỰC
+                        </Text>
+                    </TouchableOpacity>
+                }
+                {
+                    analysis.verdict != "CHƯA CÓ ĐÁNH GIÁ" && analysis.negativeCount != 0 &&
+                    <TouchableOpacity style={{
+                        backgroundColor: colors.gray, borderRadius: 8, overflow: 'hidden',
+                        flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexDirection: 'row',
+                        width: 250, height: 40, marginTop: 5, paddingHorizontal: 25
+                    }}
+                        onPress={() => setReviewOption(2)}
+                    >
+                        <LinearGradient
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            colors={[colors.black, 'transparent']}
+                            style={[globalStyles.shadow, globalStyles.leftShadow, { opacity: 0.8, }]}
+                        />
+                        <LinearGradient
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            colors={['transparent', colors.black]}
+                            style={[globalStyles.shadow, globalStyles.rightShadow, { opacity: 0.8, }]}
+                        />
+                        < View style={{
+                            width: 30, height: 30, borderRadius: 4, overflow: 'hidden',
+                            alignItems: 'center', justifyContent: 'center',
+                            backgroundColor: colors.red,
+                        }}>
+                            <LinearGradient
+                                colors={['transparent', colors.gray]}
+                                style={[globalStyles.shadow, globalStyles.bottomShadow, { bottom: 0, height: 25, opacity: 0.3 }]}
+                            />
+                            <MaterialIcons name="thumb-down"
+                                color={colors.trueWhite}
+                                size={16}
+                            />
+                        </View>
+                        <Text style={{ marginLeft: 10, color: colors.white }}>
+                            {analysis.negativeCount} TIÊU CỰC
+                        </Text>
+                    </TouchableOpacity>
+                }
+            </View>
+
+            {
+                (userReview != null && !editMode) ?
+                    <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ marginTop: 20, marginBottom: -10, width: '90%', height: 40, backgroundColor: colors.gold, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 20 }}>
+                            <LinearGradient
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                colors={['transparent', colors.red]}
+                                style={[globalStyles.shadow, globalStyles.rightShadow, { opacity: 0.3, width: '50%' }]}
+                            />
+                            <Text style={{ fontSize: 15, fontWeight: 'bold' }} numberOfLines={1}>Đánh giá của bạn</Text>
+                        </View>
+                        <ReviewCard reviewObj={userReview} />
+                        <TouchableOpacity style={{ zIndex: 999, marginTop: 15 }}
+                            activeOpacity={0.5}
+                            onPress={() => {
+                                setEditMode(true)
+                            }}
+                        >
+                            <DecoButton ButtonText="SỬA" ButtonIcon="edit" />
+                        </TouchableOpacity>
+                        <Filigree2 customPosition={-35} />
+                    </View>
+                    : (userReview != null && editMode) ?
+                        <ReviewEditBox userReview={userReview} 
+                            setEditMode={setEditMode}
+                        />
+                        :
+                        <ReviewCreateBox selectedBook={selectedBook} />
+            }
+
+            <ReviewOptions reviewOption={reviewOption}
+                reviewArray={reviewArray}
+                analysis={analysis}
+            />
+        </View >
+    )
+
+}
 
 const BookDetail = () => {
     const dispatch = useDispatch();
@@ -497,6 +1041,11 @@ const BookDetail = () => {
                     chaptersOfSelectedBook={chaptersOfSelectedBook}
                     loading={loading}
                 />
+
+                <Reviews _loading={loading}
+                    selectedBook={selectedBook}
+                />
+
                 <View style={globalStyles.bottomPadding} />
             </ScrollView>
             <AppFooter currentScreen={0} />

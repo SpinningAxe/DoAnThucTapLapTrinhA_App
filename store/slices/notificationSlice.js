@@ -1,6 +1,4 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-
-
 // State ban đầu
 const initialState = {
   notificationsDataFromAccount: [],
